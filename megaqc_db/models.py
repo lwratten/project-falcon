@@ -2,13 +2,17 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, JSON
 
+### Base object maintains a catalog of classes/tables mapped to the database
+### Also replaces all Column objects with python descriptors
+Base = declarative_base() 
 
-Base = declarative_base()
 
+### User defined classes which correspond to database tables
+### instances of these classes (objects) correspond to their table rows 
 class Sample(Base):
-    __tablename__ = 'sample'
+    __tablename__ = 'sample' # the __tablename__ attribute corresponds to the table name in the DB
     id = Column(Integer, primary_key=True) # automatically generated pkey
-    sample_id = Column(Integer, nullable = False) # actual id of sample (not guarenteed to be unique)
+    sample_id = Column(Integer, nullable = False) # actual id of sample (not guarenteed to be unique, hence id column required)
     patient_id = Column(Integer, ForeignKey('patient.id'), nullable = False)
     batch_id = Column(Integer, ForeignKey('batch.id'), nullable = False)
     cohort_id = Column(Integer, ForeignKey('cohort.id'), nullable = False)
