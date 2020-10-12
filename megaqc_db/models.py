@@ -1,11 +1,6 @@
-from datetime import datetime
-
-from sqlalchemy import create_engine, JSON
 
 from sqlalchemy import Column, Integer, String, Date, JSON,ForeignKey
-from sqlalchemy.orm import relationships
-from crud import recreate_database, Base
-from sqlalchemy.dialects.postgresql import json
+from sqlalchemy.orm import relationship
 from crud import *
 
 ### User defined classes which correspond to database tables
@@ -21,9 +16,13 @@ class Sample(Base):
     cohort_id = Column(Integer, ForeignKey('cohort.id'), nullable=False)
     path = Column(String(100), nullable=False)
 
+
+    #relationship(raw data-sample many to 1)
+    raw_data = relationship("Raw_data", backref = "sample")
+
     def __repr__(self):
-        return "<Sample(sample_id='{}', patient_id='{}', batch_id='{}', cohort_id='{}')>" \
-            .format(self.sample_id, self.patient_id, self.batch_id, self.cohort_id)
+        return "<Sample(id = '{}', sample_id='{}', patient_id='{}', batch_id='{}', cohort_id='{}')>" \
+            .format(self.id, self.sample_id, self.patient_id, self.batch_id, self.cohort_id)
 
 
 class Raw_data(Base):
@@ -34,8 +33,8 @@ class Raw_data(Base):
     metrics = Column(JSON, nullable=False)
 
     def __repr__(self):
-        return "<Sample(sample_id='{}', qc_tool='{}'>" \
-            .format(self.sample_id, self.qc_tool)
+        return "<Sample(id = '{}', sample_id='{}', qc_tool='{}'>" \
+            .format(self.id, self.sample_id, self.qc_tool)
 
 
 class Multiqc_report(Base):
@@ -45,6 +44,9 @@ class Multiqc_report(Base):
     # multiqc_report = Column(HTML) # not sure how to do
     batch_id = Column(Integer, ForeignKey('batch.id'), nullable=False)
     cohort_id = Column(Integer, ForeignKey('cohort.id'), nullable=False)
+
+    #relationship(batch-multiqc 1 to 1)
+    batch_multiqc = relationship("Batch", uselist=False, back_populates="multiqc_batch")
 
     def __repr__(self):
         return "<Sample(sample_id='{}', patient_id='{}', batch_id='{}', cohort_id='{}')>" \
@@ -61,6 +63,9 @@ class Patient(Base):
     age = Column(Integer)
     gender = Column(String(10))
 
+    #relationship(sample-patient many to 1)
+    samples = relationship("Sample", backref='sample')
+
     def __repr__(self):
         return "<Sample(patient_id='{}', batch_id='{}', cohort_id='{}'>" \
             .format(self.patient_id, self.batch_id, self.cohort_id)
@@ -75,9 +80,15 @@ class Batch(Base):
     date = Column(Date)  # date patient sample was taken
     facility = Column(String(50))
 
+    #relationship(batch-multiqc 1 to 1, patient-batch many to 1)
+    patients = relationship("Patient", backref="patient")
+    samples = relationship("Sample", backref = 'sample')
+    multiqc_batch = relationship("Multiqc_report", uselist = False, back_populates = "batch_multiqc")
+
     def __repr__(self):
         return "<Sample(batch_id='{}', flow_cell_id='{}', date='{}'>" \
             .format(self.batch_id, self.flow_cell_id, self.date)
+
 
 
 class Cohort(Base):
@@ -91,95 +102,10 @@ class Cohort(Base):
         return "<Sample(cohort_id='{}', disease='{}'>" \
             .format(self.cohort_id, self.disease)
 
+    #relationship(batch-cohort, patient-cohort, multiqc-cohort, sample-cohort many to 1)
+    batches = relationship("Batch", backref = "batch")
+    patients = relationship("Patient", backref="patient")
+    multiqc = relationship("Multiqc_report", backref="multiqc_report")
+    samples = relationship("Sample", backref='sample')
 recreate_database()
-'''
 
-
-class Raw_Data(Base):
-    #__abstract__ = True
-    __tablename__ = 'Raw Data'
-    PS_ID = Column(String, nullable= False, primary_key= True)
-    QC_tools = Column(String)
-    JASON = Column(JSON)
-
-    def __repr__(self):
-        return "<Raw_Data(PS_ID='{}', QC_tools='{}', JASON={})>" \
-            .format(self.PS_ID, self.QC_tools, self.JASON)
-        #print(Raw_Data)
-
-class MuitiQC_results(Base):
-    #__abstract__ = True
-    __tablename__ = 'MuitiQC_results'
-    MuitiQC_ID = Column(String, primary_key=True,nullable= False)
-    MuitiQC_html_path = Column(String)
-    Cohort_ID = Column(String)
-    Batch_ID = Column(Integer)
-
-    def __repr__(self):
-        return "< MuitiQC_results(MuitiQC_ID='{}', MuitiQC_html_path='{}', Cohort_ID='{}',Batch_ID='{}')>" \
-            .format(self.MuitiQC_ID, self.MuitiQC_html_path, self.Cohort_ID,self.Batch_ID)
-
-class Samples(Base):
-    __tablename__ = 'Samples'
-    PS_ID = Column(String, primary_key=True, nullable=False)
-    Sample_ID = Column(String)
-    Patient_ID = Column(String)
-    Cohort_ID = Column(String)
-    Batch_ID = Column(Integer)
-    File_path = Column(String)
-
-    def __repr__(self):
-        return "<Samples(PS_ID='{}', Sample_ID = '{}',Patient_ID = '{}', Cohort_ID = '{}',Batch_ID = '{}',File_Path = '{}')>" \
-            .format(self.PS_ID, self.Sample_ID, self.Patient_ID,self.Cohort_ID,self.Batch_ID,self.File_path)
-
-class Patient(Base):
-    __tablename__ = 'Patient'
-    Patient_ID = Column(String,primary_key= True)
-    Cohort_ID = Column(String)
-    Batch_ID = Column(Integer)
-    Date = Column(Date)
-    name = Column(String)
-    age = Column(Integer)
-
-    def __repr__(self):
-        return "<Patient(Patient_ID = '{}', Cohort_ID = '{}',Batch_ID = '{}',Date = '{}',name = '{}',age = '{}')>" \
-            .format(self.Patient_ID,self.Cohort_ID,self.Batch_ID,self.Da,self.name,self.age)
-
-
-
-
-class Batch(Base):
-    __tablename__ = 'Batch'
-    Batch_ID = Column(Integer, pimary_key= True)
-    Cohort_ID = Column(String)
-    Date = Column(Date)
-    Flow_cell_ID = Column(String)
-
-    def __repr__(self):
-        return "<Batch(Batch_ID='{}', Cohort_ID = '{}',Date = '{}',Flow_cell_ID = '{}')>" \
-            .format(self.Batch_ID, self.Cohort_ID, self.Date,self.Flow_cell_ID)
-
-
-class Cohort(Base):
-    __tablename__ = 'Cohort'
-    Cohort_ID = Column(String,primary_key= True)
-    Disease = Column(Integer)
-    Size = Column(Integer)
-    Other = Column(String)
-
-    def __repr__(self):
-        return "<Cohort(Cohort_ID = '{}',Disease = '{}',Size = '{}',Other = '{}')>" \
-            .format(self.Cohort_ID, self.Disease, self.Size,self.Other)
-
-sample1 = Raw_Data(
-    PS_ID='human 1 66',
-    QC_tools='picard',
-    JASON="key1: value1, key2: value2"
-)
-session.add(sample1)
-session.commit()
-print(sample1)
-
-
-
-'''
