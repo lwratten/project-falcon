@@ -11,11 +11,11 @@ A tool for parsing multiqc reports into a database and querying from the command
 
 
 ### Files
-* Directory `falcon_megaqc` contains the core code of the tool.
+* Directory `falcon_multiqc` contains the core code of the tool.
 * Directory `commands` contains Click commands, e.g. save. 
-* File `falcon_megaqc/cli.py` sets up Click so it will automatically search the `commands` directory for commands. After installing, run `falcon_megaqc` and see the commands available.
+* File `falcon_multiqc/cli.py` sets up Click so it will automatically search the `commands` directory for commands. After installing, run `falcon_multiqc` and see the commands available.
 * File `setup.py` allows you to use `pip install --editable .` or `pip install .`.
 
 
 ## user instructions
-1. The above dev instructions + `falcon_megaqc` command.
+1. The above dev instructions + `falcon_multiqc` command.

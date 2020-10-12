@@ -6,5 +6,5 @@ from .. import parse
 @click.command()
 @click.option("-f", "--file", type=click.File('r'), help="Path to multiqc_data.json output file")
 def cli(file):
-    """Command line interface for saving to falcon_megaqc"""
+    """Command line interface for saving to falcon_multiqc"""
     parse.parse_multiqc_data(file)
