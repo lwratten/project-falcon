@@ -16,7 +16,7 @@ class ComplexCLI(click.MultiCommand):
 
     def get_command(self, ctx, name):
         try:
-            mod = __import__(f"falcon_megaqc.commands.{name}", None, None, ["cli"])
+            mod = __import__(f"falcon_multiqc.commands.{name}", None, None, ["cli"])
         except ImportError as e:
             print(e)
             return
@@ -24,5 +24,5 @@ class ComplexCLI(click.MultiCommand):
 
 @click.command(cls=ComplexCLI)
 def cli():
-    """Welcome to Falcon MegaQC!"""
+    """Welcome to Falcon multiQC!"""
     pass
