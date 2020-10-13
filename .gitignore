@@ -1,3 +1,4 @@
 env/
 falcon_multiqc.egg-info
 __pycache__
+.vscode/settings.json
