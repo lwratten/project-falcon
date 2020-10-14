@@ -18,7 +18,7 @@ class Sample(Base):
     id = Column(Integer, primary_key=True, nullable=False)
 
     sample_name = Column(Integer, nullable=False)
-    patient_id = Column(Integer, ForeignKey("patient.id"), nullable=False)
+    patient_id = Column(Integer, ForeignKey("patient.id"), nullable=True)
     batch_id = Column(Integer, ForeignKey("batch.id"), nullable=False)
     cohort_id = Column(Integer, ForeignKey("cohort.id"), nullable=False)
 
@@ -49,9 +49,7 @@ class Patient(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
 
-    batch_id = Column(Integer, ForeignKey('batch.id'), nullable=False)
     cohort_id = Column(Integer, ForeignKey('cohort.id'), nullable=False)
-    full_name = Column(String(100))
     age = Column(Integer)
     gender = Column(String(10))
 
@@ -59,8 +57,8 @@ class Patient(Base):
     samples = relationship("Sample", backref="patient")
 
     def __repr__(self):
-        return "<Patient(id='{}', batch_id='{}', cohort_id='{}'>" \
-            .format(self.id, self.batch_id, self.cohort_id)
+        return "<Patient(id='{}', cohort_id='{}', age='{}, gender='{}'>" \
+            .format(self.id, self.cohort_id, self.age, self.gender)
 
 
 class Batch(Base):
