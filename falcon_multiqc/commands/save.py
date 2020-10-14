@@ -31,19 +31,21 @@ def cli(directory, cohort):
             for tool in multiqc_data_json["report_saved_raw_data"]:
                 for sample in multiqc_data_json["report_saved_raw_data"][tool]:
                     sample_id = None
+                    sample_name = sample.split("_")[0]
+                        
                     # Check if this sample name has already been stored.
-                    if not sample in samples:
+                    if not sample_name in samples:
                         sample_row = Sample(
                             batch_id=batch_row.id,
                             cohort_id=cohort,
-                            sample_name=sample
+                            sample_name=sample_name
                         )
                         session.add(sample_row)
                         session.flush()
-                        samples[sample] = sample_row.id
+                        samples[sample_name] = sample_row.id
                         sample_id = sample_row.id
                     else:
-                        sample_id = samples[sample]
+                        sample_id = samples[sample_name]
 
                     raw_data_row = RawData(
                         sample_id=sample_id,
