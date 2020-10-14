@@ -14,6 +14,6 @@ setup(
     install_requires=read_requirements(),
     entry_points="""
         [console_scripts]
-        falcon_multiqc=falcon_multiqc.cli:cli
+        falcon_multiqc=falcon_multiqc.cli:safe_entry_point
     """
 )

@@ -2,3 +2,4 @@ env/
 falcon_multiqc.egg-info
 __pycache__
 .vscode/
+tests/test_data/multiqc_output
