@@ -15,34 +15,39 @@ def cli(directory, cohort):
         multiqc_data_json = json.load(multiqc_data)
 
         with session_scope() as session:
+            batch_row = Batch(
+                cohort_id=cohort,
+                flow_cell_id=0,  # TODO: implement real flow cell id
+                path=directory,
+                date=datetime.datetime.now()  # TODO: implement real date
+            )
+
+            session.add(batch_row)
+            session.flush()
+
+            # Keep track of samples added, so we don't duplicate any.
+            samples = {}  # name : primary key id
 
             for tool in multiqc_data_json["report_saved_raw_data"]:
-
                 for sample in multiqc_data_json["report_saved_raw_data"][tool]:
-
-                    batch_row = Batch(
-                        cohort_id=cohort,
-                        flow_cell_id=0,  # TODO: implement real flow cell id
-                        path=directory,
-                        date=datetime.datetime.now()  # TODO: implement real date
-                    )
-
-                    session.add(batch_row)
-                    session.flush()
-
-                    sample_row = Sample(
-                        batch_id=batch_row.id,
-                        cohort_id=cohort,
-                        sample_name=sample
-                    )
-
-                    session.add(sample_row)
-                    session.flush()
+                    sample_id = None
+                    # Check if this sample name has already been stored.
+                    if not sample in samples:
+                        sample_row = Sample(
+                            batch_id=batch_row.id,
+                            cohort_id=cohort,
+                            sample_name=sample
+                        )
+                        session.add(sample_row)
+                        session.flush()
+                        samples[sample] = sample_row.id
+                        sample_id = sample_row.id
+                    else:
+                        sample_id = samples[sample]
 
                     raw_data_row = RawData(
-                        sample_id=sample_row.id,
+                        sample_id=sample_id,
                         qc_tool=tool.split("_")[1],
                         metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
                     )
-
                     session.add(raw_data_row)
