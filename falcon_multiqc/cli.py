@@ -1,5 +1,6 @@
 import os
 import click
+import traceback
 
 # ComplexCLI code mainly from Click example.
 # https://github.com/pallets/click/blob/master/examples/complex/complex/cli.py#L31
@@ -26,3 +27,11 @@ class ComplexCLI(click.MultiCommand):
 def cli():
     """Welcome to Falcon multiQC!"""
     pass
+
+# Ensures exceptions are printed nicely.
+def safe_entry_point():
+    try:
+        cli()
+    except Exception as e:
+        click.echo(traceback.format_exc()) # Remove this line if you don't want to print stack trace.
+        click.echo(click.style(str(e), fg="red"))
