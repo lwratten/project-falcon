@@ -1,13 +1,20 @@
 # project-falcon
 A tool for parsing multiqc reports into a database and querying from the command-line
 
+## User instructions
+- The below dev instructions + `falcon_multiqc` command.
+- `falcon_multiqc --help` to see all available commands
+- `falcon_multiqc create_tables` to create database tables
+- `falcon_multiqc create_tables --destroy` destroy old tables and create new database tables
+- `falcon_multiqc create_cohort` creates a new cohort in the database and sends its primary key / id to stdout
+- `falcon_multiqc save -d path/to/directory -c cohortID` save the directory data to the database and given cohort ID
 
-## dev instructions
+## Dev instructions
 1. `git clone https://github.com/lwratten/project-falcon.git`
 2. `cd project-falcon`
 3. `python3 -m venv env` create a python virtual environment if you haven't already
 4. `source env/bin/activate`  activate / go into the virtual environment
-5. `pip install --editable .` 
+5. `pip install --editable .` this allows you to install the tool and updates automatically if you edit it (re-install if you change any of the cli / click things)
 
 
 ### Files
@@ -17,5 +24,3 @@ A tool for parsing multiqc reports into a database and querying from the command
 * File `setup.py` allows you to use `pip install --editable .` or `pip install .`.
 
 
-## user instructions
-1. The above dev instructions + `falcon_multiqc` command.
