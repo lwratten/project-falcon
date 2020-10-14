@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from .config import DATABASE_URI
 from .models import Base
 
-engine = create_engine(DATABASE_URI, echo=True)
+engine = create_engine(DATABASE_URI)
 
 # Global Session object factory.
 # Create new sessions using Session(), which is done for you in session_scope() below.

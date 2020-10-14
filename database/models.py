@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, JSON, ForeignKey, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -17,10 +17,11 @@ class Sample(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
 
-    sample_name = Column(Integer, nullable=False)
     patient_id = Column(Integer, ForeignKey("patient.id"), nullable=True)
     batch_id = Column(Integer, ForeignKey("batch.id"), nullable=False)
     cohort_id = Column(Integer, ForeignKey("cohort.id"), nullable=False)
+    # Non-unique sample ID/name given in input.
+    sample_name = Column(String, nullable=False)
 
     # relationship(raw data-sample many to 1)
     raw_data = relationship("RawData", backref="sample")
@@ -44,6 +45,12 @@ class RawData(Base):
             .format(self.id, self.sample_id, self.qc_tool, self.metrics)
 
 
+PatientBatch = Table("PatientBatch", Base.metadata,
+                     Column("patient_id", Integer, ForeignKey("patient.id")),
+                     Column("batch_id", Integer, ForeignKey("batch.id")),
+                     )
+
+
 class Patient(Base):
     __tablename__ = 'patient'
 
@@ -53,12 +60,14 @@ class Patient(Base):
     age = Column(Integer)
     gender = Column(String(10))
 
-    # relationship(sample-patient many to 1)
+    # Sample-Patient many to 1
     samples = relationship("Sample", backref="patient")
+    # Batch-Patient many to many
+    batches = relationship("Batch", secondary=PatientBatch, backref="patient")
 
     def __repr__(self):
-        return "<Patient(id='{}', cohort_id='{}', age='{}, gender='{}'>" \
-            .format(self.id, self.cohort_id, self.age, self.gender)
+        return "<Patient(id='{}', age='{}, gender='{}'>" \
+            .format(self.id, self.age, self.gender)
 
 
 class Batch(Base):
@@ -68,14 +77,13 @@ class Batch(Base):
 
     cohort_id = Column(Integer, ForeignKey('cohort.id'), nullable=False)
     flow_cell_id = Column(Integer, nullable=False)
-    date = Column(Date)  # date patient sample was taken
     path = Column(String(100), nullable=False)
+    date = Column(Date)  # date patient sample was taken
 
-    # relationship(batch-multiqc 1 to 1, patient-batch many to 1)
-    patients = relationship("Patient", backref="batch")
+    # Batch-Patients many to many
+    patients = relationship("Patient", secondary=PatientBatch, backref="batch")
+    # Sample-Batch many to 1
     samples = relationship("Sample", backref="batch")
-    # multiqc_batch = relationship(
-    #    "Multiqc_report", uselist=False, back_populates="batch_multiqc")
 
     def __repr__(self):
         return "<Batch(id='{}', cohort_id='{}', flow_cell_id='{}', path='{}' date='{}'>" \
@@ -90,12 +98,11 @@ class Cohort(Base):
     disease = Column(String(50))
     size = Column(Integer)
 
-    def __repr__(self):
-        return "<Cohort(id='{}'，disease='{}，size='{}''>" \
-            .format(self.id, self.disease, self.size)
-
     # relationship(batch-cohort, patient-cohort, multiqc-cohort, sample-cohort many to 1)
     batches = relationship("Batch", backref="cohort")
     patients = relationship("Patient", backref="cohort")
-    #multiqc = relationship("Multiqc_report", backref="cohort")
     samples = relationship("Sample", backref="cohort")
+
+    def __repr__(self):
+        return "<Cohort(id='{}'，disease='{}，size='{}''>" \
+            .format(self.id, self.disease, self.size)
