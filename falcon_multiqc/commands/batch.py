@@ -19,7 +19,7 @@ def cli():
         try:
             html_path = session.query(Batch).filter(Batch.id == query).first().path + '/multiqc_report.html'
             click.echo(f'Opening batch ID {query}')
-            subprocess.call(['xdg-open', '/' + html_path]) # in windows use os module, os.startfile(r'html_path')
+            subprocess.call(['xdg-open', html_path]) # in windows use os module, os.startfile(r'html_path')
         except AttributeError:
             click.echo("===\nBatch ID entered is not present in Batch table.\n===")
 
