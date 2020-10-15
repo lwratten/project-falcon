@@ -47,7 +47,9 @@ def cli(directory, cohort):
 
                     raw_data_row = RawData(
                         sample_id=sample_id,
-                        qc_tool=tool.split("_")[1],
+                        qc_tool=tool[8:],
                         metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
                     )
                     session.add(raw_data_row)
+                    session.flush()
+

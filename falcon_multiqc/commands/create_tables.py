@@ -1,15 +1,13 @@
 import click
-from database.crud import create_database, recreate_database
+from database.crud import create_database
 
 # Command for initalizing database.
 
 
 @click.command()
-@click.option("-d", "--destroy", is_flag=True, help="Destroy the old database (drop all tables)")
-def cli(destroy):
+def cli():
     """Creates a new database"""
-
-    if (destroy):
-        recreate_database()
-    else:
-        create_database()
+    
+    create_database()
+    print("Database has been created!")
+    #TODO check to see if tables already exist and prompt user if they already do
