@@ -17,9 +17,7 @@ def cli(directory, cohort):
         with session_scope() as session:
             batch_row = Batch(
                 cohort_id=cohort,
-                flow_cell_id=0,  # TODO: implement real flow cell id
                 path=directory,
-                date=datetime.datetime.now()  # TODO: implement real date
             )
 
             session.add(batch_row)

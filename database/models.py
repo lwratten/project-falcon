@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, JSON, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Date, JSON, ForeignKey, Table, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -19,16 +19,24 @@ class Sample(Base):
 
     patient_id = Column(Integer, ForeignKey("patient.id"), nullable=True)
     batch_id = Column(Integer, ForeignKey("batch.id"), nullable=False)
-    cohort_id = Column(Integer, ForeignKey("cohort.id"), nullable=False)
+    cohort_id = Column(String, ForeignKey("cohort.id"), nullable=False)
     # Non-unique sample ID/name given in input.
     sample_name = Column(String, nullable=False)
+    flowcell_lane = Column(String, nullable=False)
+    library_id = Column(String, nullable=False)
+    platform = Column(String, nullable=False)
+    centre = Column(String, nullable=False)
+    reference_genome = Column(String, nullable=False)
+    description = Column(Text)
 
     # relationship(raw data-sample many to 1)
     raw_data = relationship("RawData", backref="sample")
 
     def __repr__(self):
-        return "<id='{}', sample_name='{}', patient_id='{}', batch_id='{}', cohort_id='{}')>" \
-            .format(self.id, self.sample_name, self.patient_id, self.batch_id, self.cohort_id)
+        return """<id='{}', sample_name='{}', patient_id='{}', batch_id='{}', cohort_id='{}', 
+                flowcell_lane='{}', library_id='{}', platform='{}', centre='{}', reference_genome='{}', type='{}', description='{}')>""" \
+                .format(self.id, self.sample_name, self.patient_id, self.batch_id, self.cohort_id,
+                        self.flowcell_lane, self.library_id, self.platform, self.centre, self.reference_genome, self.type, self.description)
 
 
 class RawData(Base):
@@ -75,10 +83,11 @@ class Batch(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
 
-    cohort_id = Column(Integer, ForeignKey('cohort.id'), nullable=False)
-    flow_cell_id = Column(Integer, nullable=False)
+    cohort_id = Column(String, ForeignKey('cohort.id'), nullable=False)
+
+    batch_name = Column(Integer, nullable=False)
     path = Column(String(100), nullable=False)
-    date = Column(Date)  # date patient sample was taken
+    description = Column(Text)
 
     # Batch-Patients many to many
     patients = relationship("Patient", secondary=PatientBatch, backref="batch")
@@ -93,10 +102,10 @@ class Batch(Base):
 class Cohort(Base):
     __tablename__ = 'cohort'
 
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(String, primary_key=True, nullable=False)
 
-    disease = Column(String(50))
-    size = Column(Integer)
+    type = Column(String, nullable=False)
+    description = Column(Text)
 
     # relationship(batch-cohort, patient-cohort, multiqc-cohort, sample-cohort many to 1)
     batches = relationship("Batch", backref="cohort")
