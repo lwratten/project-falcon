@@ -8,6 +8,6 @@ from database.crud import recreate_database
 def cli():
     """Deletes all database entries"""
     
-    print("Are you sure you want to delete all data entries in the database?")
-    if input("Enter y/n: ") == "y":
+    click.echo("Are you sure you want to delete all data entries in the database?")
+    if click.prompt("Enter y/n: ") == "y":
         recreate_database()

@@ -9,5 +9,5 @@ def cli():
     """Creates a new database"""
     
     create_database()
-    print("Database has been created!")
+    click.echo("Database has been created!")
     #TODO check to see if tables already exist and prompt user if they already do
