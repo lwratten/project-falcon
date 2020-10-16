@@ -64,7 +64,7 @@ class Patient(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
 
-    cohort_id = Column(Integer, ForeignKey('cohort.id'), nullable=False)
+    cohort_id = Column(String, ForeignKey('cohort.id'), nullable=False)
     age = Column(Integer)
     gender = Column(String(10))
 
@@ -85,7 +85,7 @@ class Batch(Base):
 
     cohort_id = Column(String, ForeignKey('cohort.id'), nullable=False)
 
-    batch_name = Column(Integer, nullable=False)
+    batch_name = Column(String, nullable=False)
     path = Column(String(100), nullable=False)
     description = Column(Text)
 
