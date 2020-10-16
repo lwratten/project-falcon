@@ -35,18 +35,17 @@ def cli(directory, sample_metadata, batch_description, cohort_description):
 
                 batch_id = None
 
-                if not cohort_id and session.query(Cohort.id).filter_by(id=split[1]).scalar() is None:
-                    # Cohort does not exist in database.
-                    cohort_row = Cohort(
-                        id=split[1],
-                        type=split[7],
-                        description=cohort_description
-                    )
-                    session.add(cohort_row)
-
-                # Get cohort id / name from the first data row (assuming the metadata is for 1 cohort).
                 if not cohort_id:
+                    # Get cohort id / name from the first data row (assuming the metadata is for 1 cohort).
                     cohort_id = split[1]
+                    if session.query(Cohort.id).filter_by(id=split[1]).scalar() is None:
+                        # Cohort does not exist in database.
+                        cohort_row = Cohort(
+                            id=split[1],
+                            type=split[7],
+                            description=cohort_description
+                        )
+                        session.add(cohort_row)
 
                 if session.query(Batch).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).scalar() is None:
                     # Batch does not exist in database.
