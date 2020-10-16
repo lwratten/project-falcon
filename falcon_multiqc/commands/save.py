@@ -12,7 +12,7 @@ from database.models import Base, RawData, Batch, Sample, Cohort
 @click.option("-c", "--cohort_description", type=click.STRING, required=False, help="Description of this cohort (assuming this is one cohort)")
 def cli(directory, sample_metadata, batch_description, cohort_description):
     """Saves the given directory to the falcon_multiqc database"""
-
+    # TODO: better error handling
     with open(directory + "/multiqc_data/multiqc_data.json") as multiqc_data:
         # Skip header
         next(sample_metadata)
@@ -83,10 +83,6 @@ def cli(directory, sample_metadata, batch_description, cohort_description):
             for tool in multiqc_data_json["report_saved_raw_data"]:
                 for sample in multiqc_data_json["report_saved_raw_data"][tool]:
                     sample_name = sample.split("_")[0]
-
-                    if sample_name not in samples:
-                        click.echo("sample not in samples" + sample_name)
-                        click.echo("samples in dict = " + samples)
 
                     raw_data_row = RawData(
                         sample_id=samples[sample_name],
