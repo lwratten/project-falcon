@@ -47,9 +47,9 @@ def cli(server_address):
             if (database,) in databases:
                 create_config(username, password, server_address, database) # re-create config file with proper connection URL 
                 if server_address:
-                    check_db_engine = create_engine(f'postgres+psycopg2://{username}:{password}@{server_address[0]}:{server_address[1]}/{(database,)[0]}')
+                    check_db_engine = create_engine(f'postgres+psycopg2://{username}:{password}@{server_address[0]}:{server_address[1]}/{database}')
                 else:
-                    check_db_engine = create_engine(f'postgres+psycopg2://{username}:{password}@localhost:5432/{(database,)[0]}')
+                    check_db_engine = create_engine(f'postgres+psycopg2://{username}:{password}@localhost:5432/{database}')
                 inspector = inspect(check_db_engine)
                 if not falcon_multiqc_schema == inspector.get_table_names():
                     click.echo("\n===\nWarning, selected database is not a falcon_multiqc database, please try again or create a new database\n===\n")
