@@ -37,8 +37,3 @@ def cli(n,v,tool):
             f.write("%s\n" % item[0])
     click.echo("files saved!")
 
-
-
-
-if __name__ == '__main__':
-    cli()
