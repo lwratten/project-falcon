@@ -115,3 +115,13 @@ class Cohort(Base):
     def __repr__(self):
         return "<Cohort(id='{}'，disease='{}，size='{}''>" \
             .format(self.id, self.disease, self.size)
+
+tables = []
+def tables_check():
+    for name, model_class in Base._decl_class_registry.items():
+        try:
+            tables.append(model_class.__tablename__)
+        except:
+            # Sometimes there is an object that's not a model class in this iteration.
+            continue
+    return tables
