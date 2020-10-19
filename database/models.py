@@ -116,8 +116,8 @@ class Cohort(Base):
         return "<Cohort(id='{}'，disease='{}，size='{}''>" \
             .format(self.id, self.disease, self.size)
 
-tables = []
-def tables_check():
+def get_tables():
+    tables = []
     for name, model_class in Base._decl_class_registry.items():
         try:
             tables.append(model_class.__tablename__)
