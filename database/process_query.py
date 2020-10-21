@@ -6,10 +6,11 @@ import subprocess
 # user_path = r"D:\C_DRIVE_DATA\falcon_multiqc_DATA\test"
 # query_file = r'C:\Users\New\Desktop\MastersIT\2020T3\BINF6112\Project_Falcon\test2\list_samples.txt'
 
-def process_query(query_file, **kwargs):
+def process_query(query_file, *args, **kwargs):
     # query_file needs to be absolute path
     # accepted kwargs are: csv, multiqc - can use both at once
     # For each key, value is the absolute path user wants data to be saved
+    # user can specify 'html' flag during query which will automatically open newly made multiqc HTML file
     # By deafult this function will stdout 
 
     if 'csv' in kwargs.keys():
@@ -22,7 +23,9 @@ def process_query(query_file, **kwargs):
 
     if 'multiqc' in kwargs.keys():   
         config = os.path.abspath("./falconqc.config")
-        subprocess.run(['multiqc', '-l', query_file, '-c', config, '-o', kwargs['multiqc']]) #'-c', config,
+        subprocess.run(['multiqc', '-l', query_file, '-c', config, '-o', kwargs['multiqc']]) 
+        if 'html' in args:
+            subprocess.call(['wsl-open', kwargs['multiqc'] + '/multiqc_report.html']) # for windows: os.startfile(kwargs['multiqc'] + '\multiqc_report.html')
     
     if not kwargs.keys():
         with open(query_file, 'r') as metric_list:
@@ -30,5 +33,5 @@ def process_query(query_file, **kwargs):
             for line in csv_reader:
                 print(line)
 
-#temp
-#process_query(query_file, csv = user_path, multiqc = user_path)
+#temp example: 
+# process_query(query_file, 'html', csv = user_path, multiqc = user_path)
