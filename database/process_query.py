@@ -21,4 +21,3 @@ def create_csv(metric_list, user_dir):
 # Prints the list of samples (as row) returned from query 
 def print_query(sample_list, user_dir):
     [print(sample_list[i]) for i in sample_list]
-
