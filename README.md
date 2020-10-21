@@ -6,7 +6,7 @@ A tool for parsing multiqc reports into a database and querying from the command
 - Use `falcon_multiqc --help` to see all available commands
 ### Save commands
 - Use `falcon_multiqc save --help` to see how to use save.
-- `falcon_multiqc save --directory multiqc/output/path --sample_metadata meta_data_file
+- E.g. `falcon_multiqc save --directory multiqc/output/path --sample_metadata meta_data_file`
 - `--sample_metadata` is a required argument - A csv with the header: `Sample,Name,Cohort,Name,Batch,Name,Flowcell.Lane,Library ID,Platform,Centre of Sequencing,Reference Genome,Type,Description`
 - Adding descriptions to cohort, batch, or sample is optional.
   - `--batch_description` {string} -- Set this if the input is 1 batch. Will apply this description to all new batches.
