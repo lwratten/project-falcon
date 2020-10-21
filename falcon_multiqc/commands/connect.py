@@ -51,13 +51,14 @@ def cli(uri):
         while True:
             if not uri:
                 database = click.prompt("\nEnter database name to connect, or enter new name to create a new falcon_multiqc database")
-            if (database,) in databases or (uri[4],) in databases:     
+            if (database,) in databases or (uri and (uri[4],)) in databases:     
                 if uri:
                     check_db_engine = create_engine(f'postgres+psycopg2://{uri[0]}:{uri[1]}@{uri[2]}:{uri[3]}/{uri[4]}')
                 else:
                     check_db_engine = create_engine(f'postgres+psycopg2://{username}:{password}@localhost:5432/{database}')
                 falcon_multiqc_schema = get_tables() # load current falcon_multiqc schema 
                 inspector = inspect(check_db_engine)
+
                 if len([t for t in falcon_multiqc_schema if t in inspector.get_table_names()]) != len(falcon_multiqc_schema): # checks whether selected db has falcon_multiqc schema
                     if uri:
                         click.echo("\n===\nWarning, entered database is not a falcon_multiqc database\n===\n\nExiting falcon_multiqc...")

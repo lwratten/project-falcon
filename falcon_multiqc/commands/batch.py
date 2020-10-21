@@ -11,8 +11,8 @@ def cli():
 
     with session_scope() as session:
         click.echo("Current list of batches in database are:\n")
-        batch_list = session.query(*[c for c in Batch.__table__.c if c.name != 'path']).all()
-        [click.echo(f"Batch_ID {b[0]}:      Details (cohortID {b[1]}, flowCell {b[2]}, date {b[3]})") for b in batch_list] 
+        batch_list = session.query(Batch.id, Batch.cohort_id, Batch.batch_name, Batch.description).all()
+        [click.echo("Batch " + str(b)) for b in batch_list] 
         query = click.prompt("\nPlease enter the batch ID of the html you would like to open")
 
         try:
