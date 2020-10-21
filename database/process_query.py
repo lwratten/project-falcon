@@ -25,7 +25,7 @@ def process_query(query_file, *args, **kwargs):
         config = os.path.abspath("./falconqc.config")
         subprocess.run(['multiqc', '-l', query_file, '-c', config, '-o', kwargs['multiqc']]) 
         if 'html' in args:
-            subprocess.call(['wsl-open', kwargs['multiqc'] + '/multiqc_report.html']) # for windows: os.startfile(kwargs['multiqc'] + '\multiqc_report.html')
+            subprocess.call(['xdg-open', kwargs['multiqc'] + '/multiqc_report.html']) # for windows: os.startfile(kwargs['multiqc'] + '\multiqc_report.html')
     
     if not kwargs.keys():
         with open(query_file, 'r') as metric_list:
