@@ -3,7 +3,7 @@ import csv
 import subprocess 
 
 # Creates new multiqc report given the absolute path for file_names.txt and the user specified directory
-def run_multiqc(file_names, user_dir, html = None):
+def run_multiqc(file_names, output_dir, open_html = False):
     config = os.path.abspath("./falconqc.config")
     subprocess.run(['multiqc', '-l', file_names, '-c', config, '-o', user_dir]) 
     if html:
