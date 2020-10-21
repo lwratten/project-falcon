@@ -3,11 +3,16 @@ A tool for parsing multiqc reports into a database and querying from the command
 
 ## User instructions
 - The below dev instructions + `falcon_multiqc` command.
-- `falcon_multiqc --help` to see all available commands
-- `falcon_multiqc create_tables` to create database tables
-- `falcon_multiqc create_tables --destroy` destroy old tables and create new database tables
-- `falcon_multiqc create_cohort` creates a new cohort in the database and sends its primary key / id to stdout
-- `falcon_multiqc save -d path/to/directory -c cohortID` save the directory data to the database and given cohort ID
+- Use `falcon_multiqc --help` to see all available commands
+### Save commands
+- Use `falcon_multiqc save --help` to see how to use save.
+- `falcon_multiqc save --directory multiqc/output/path --sample_metadata meta_data_file
+- `--sample_metadata` is a required argument - A csv with the header: `Sample,Name,Cohort,Name,Batch,Name,Flowcell.Lane,Library ID,Platform,Centre of Sequencing,Reference Genome,Type,Description`
+- Adding descriptions to cohort, batch, or sample is optional.
+  - `--batch_description` {string} -- Set this if the input is 1 batch. Will apply this description to all new batches.
+  - `--cohort_description` {string} -- Set this if the input is 1 cohort. Will apply this description to all new cohorts.
+  - `--batch_metadata` {file} -- A csv with header `Batch Name,Description`. Set this if the input is multiple batches.
+
 
 ## Dev instructions
 1. `git clone https://github.com/lwratten/project-falcon.git`
