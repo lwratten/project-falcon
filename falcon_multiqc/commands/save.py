@@ -4,15 +4,30 @@ import datetime
 from database.crud import session_scope
 from database.models import Base, RawData, Batch, Sample, Cohort
 
+"""
+This command saves input multiqc data to the falcon multiqc database.
+
+Required Arguments:
+    directory {path} -- Multiqc directory to save.
+
+    sample_metadata {file} -- A csv with the header:
+    "Sample,Name,Cohort,Name,Batch,Name,Flowcell.Lane,Library ID,Platform,Centre of Sequencing,Reference Genome,Type,Description"
+
+Optional Description Arguments:
+    batch_description {string} -- Set this if the input is 1 batch.
+    cohort_description {string} -- Set this if the input is 1 cohort.
+    batch_metadata {file} -- A csv with header "Batch Name,Description". Set this if the input is multiple batches.
+
+"""
 
 @click.command()
 @click.option("-d", "--directory", type=click.Path(), required=True, help="Path to multiqc_output directory")
 @click.option("-s", "--sample_metadata", type=click.File(), required=True, help="Sample metadata file")
-@click.option("-b", "--batch_description", type=click.STRING, required=False, help="Description of this batch (assuming this is one batch)")
-@click.option("-c", "--cohort_description", type=click.STRING, required=False, help="Description of this cohort (assuming this is one cohort)")
-def cli(directory, sample_metadata, batch_description, cohort_description):
+@click.option("-b", "--batch_description", type=click.STRING, required=False, help="Give every new batch this description.")
+@click.option("-c", "--cohort_description", type=click.STRING, required=False, help="Give every new cohort this description.")
+@click.option("-bm", "--batch_metadata", type=click.File(), required=False, help="Batch metadata file (with descriptions)")
+def cli(directory, sample_metadata, batch_description, cohort_description, batch_metadata):
     """Saves the given directory to the falcon_multiqc database"""
-    # TODO: better error handling
     with open(directory + "/multiqc_data/multiqc_data.json") as multiqc_data:
         # Skip header
         next(sample_metadata)
@@ -42,7 +57,6 @@ def cli(directory, sample_metadata, batch_description, cohort_description):
                         # Cohort does not exist in database.
                         cohort_row = Cohort(
                             id=split[1],
-                            type=split[7],
                             description=cohort_description
                         )
                         session.add(cohort_row)
@@ -71,7 +85,8 @@ def cli(directory, sample_metadata, batch_description, cohort_description):
                     platform=platform,
                     centre=centre,
                     reference_genome=reference,
-                    description=description
+                    description=description,
+                    type=type
                 )
                 session.add(sample_row)
                 session.flush()
@@ -89,3 +104,11 @@ def cli(directory, sample_metadata, batch_description, cohort_description):
                         metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
                     )
                     session.add(raw_data_row)
+
+            if batch_metadata:
+                for line in batch_metadata:
+                    split = line.split(",")
+                    batch_name = split[0]
+                    batch_description = split[1]
+                    # Update each batch with the given batch description.
+                    session.query(Batch).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).description = batch_description

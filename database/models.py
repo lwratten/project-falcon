@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Date, JSON, ForeignKey, Table, Text
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Table, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -27,7 +28,8 @@ class Sample(Base):
     platform = Column(String, nullable=False)
     centre = Column(String, nullable=False)
     reference_genome = Column(String, nullable=False)
-    description = Column(Text)
+    type = Column(String, nullable=False)
+    description = Column(Text)    
 
     # relationship(raw data-sample many to 1)
     raw_data = relationship("RawData", backref="sample")
@@ -46,7 +48,7 @@ class RawData(Base):
 
     sample_id = Column(Integer, ForeignKey('sample.id'), nullable=False)
     qc_tool = Column(String(50), nullable=False)
-    metrics = Column(JSON, nullable=False)
+    metrics = Column(JSONB, nullable=False)
 
     def __repr__(self):
         return "<RawData(id = '{}', sample_id='{}', qc_tool='{}',metrics = '{}'>" \
@@ -104,7 +106,6 @@ class Cohort(Base):
 
     id = Column(String, primary_key=True, nullable=False)
 
-    type = Column(String, nullable=False)
     description = Column(Text)
 
     # relationship(batch-cohort, patient-cohort, multiqc-cohort, sample-cohort many to 1)

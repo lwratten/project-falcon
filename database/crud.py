@@ -29,7 +29,6 @@ def session_scope():
 def create_database():
     Base.metadata.create_all(engine)
 
-# Recreate database will destroy the database and re-build it with empty tables (use only for development).
-def recreate_database():
+# Destroy database will drop all database tables.
+def destroy_database():
     Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
