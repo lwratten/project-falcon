@@ -8,7 +8,7 @@ from database.process_query import run_multiqc
 # example query: 
 
 # this query will query fastqc tool for Total seqence metric - since only the first batch ran fastqc it will only return first batch
-#SELECT s.sample_name, b.path, rd.metrics FROM public.raw_data as rd join sample as s on (s.id = rd.sample_id) join batch as b on (s.batch_id = b.id) where rd.qc_tool = 'fastqc' AND (rd.metrics->>'Total Sequences')::numeric::integer >= 316624794;
+# SELECT s.sample_name, b.path FROM public.raw_data as rd join sample as s on (s.id = rd.sample_id) join batch as b on (s.batch_id = b.id) where rd.qc_tool = 'fastqc' AND (rd.metrics->>'Total Sequences')::numeric::integer >= 316624794;
 
 # this queries two different tools (picard_insertsize and verifybamid) and on of their respective metrics - returns sampleID from first batch and sampleID from 4012 batch 
 # SELECT s.sample_name, b.path FROM public.raw_data as rd join sample as s on (s.id = rd.sample_id) join batch as b on (s.batch_id = b.id) where ((rd.qc_tool = 'picard_insertSize' AND (rd.metrics->>'MEAN_INSERT_SIZE')::numeric::integer <= 390) OR (rd.qc_tool = 'verifybamid' AND (rd.metrics->>'#READS')::numeric::integer >= 4850000));
