@@ -109,6 +109,6 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
                 for line in batch_metadata:
                     split = line.split(",")
                     batch_name = split[0]
-                    batch_description = split[1]
+                    batch_description = split[2]
                     # Update each batch with the given batch description.
                     session.query(Batch).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).description = batch_description
