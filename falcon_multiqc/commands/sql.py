@@ -3,8 +3,6 @@ import glob
 import os
 from sqlalchemy import create_engine
 from database.config import DATABASE_URI
-from database.crud import session_scope
-from database.models import Base, Sample, RawData
 from database.process_query import run_multiqc
 
 # example query: 
