@@ -1,3 +1,3 @@
 ### config.py ###
 
-DATABASE_URI = "postgres+psycopg2://postgres:bentopostgres@localhost:5432/test3"
+DATABASE_URI = "postgres+psycopg2://USERNAME:PASSWORD@IP_ADDRESS:0/DATABASE_NAME"
