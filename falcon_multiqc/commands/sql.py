@@ -1,6 +1,4 @@
 import click
-import glob
-import os
 from database.crud import engine as query_eng
 from database.process_query import create_new_multiqc
 
