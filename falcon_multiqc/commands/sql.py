@@ -42,4 +42,4 @@ def cli(directory, sql):
     
         run_multiqc(directory + f'/falconqc_query.txt', config, directory) # run_multiqc function creates new multiqc report
         click.echo("\nNew multiqc report created!\n")
-    query_eng.dispose() #TODO I don't know whether to dispose this or not? 
+        query_eng.dispose() #TODO I don't know whether to dispose this or not? 
