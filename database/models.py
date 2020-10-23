@@ -88,7 +88,7 @@ class Batch(Base):
     cohort_id = Column(String, ForeignKey('cohort.id'), nullable=False)
 
     batch_name = Column(String, nullable=False)
-    path = Column(String(100), nullable=False)
+    path = Column(String, nullable=False)
     description = Column(Text)
 
     # Batch-Patients many to many
