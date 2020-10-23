@@ -43,10 +43,9 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
         if len(batch_dir_list) != len(metadata_file_list):
             click.echo("Warning, provided list of directories do not match corresponding list of metadata files.")
             sys.exit(1)
-
     else: # deafult - when a single directory or file is provided
-        batch_dir_list[0] = directory
-        metadata_file_list[0] = sample_metadata
+        batch_dir_list = [directory]
+        metadata_file_list = [sample_metadata]
     
     for i in range(len(batch_dir_list)):
         directory = batch_dir_list[i]
