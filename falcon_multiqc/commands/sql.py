@@ -22,7 +22,7 @@ def cli(directory, sql):
 
         click.echo("Processing sql query!") 
         map_path_sample = {} # Dictionary to store path:sample_name key value pairs 
-        config = os.path.abspath("./database/falconqc.config") # loading falconqc config file
+        config = os.path.abspath("./database/multiqc.config") # loading falconqc config file
         with query_eng.connect() as conn:
             sample_list = conn.execute(sql) # executes SQL query against database - sample list stores tuples of (path, sample_name)
             click.echo(f"Query complete with {sample_list.rowcount} samples found, compiling path file for multiqc...")
