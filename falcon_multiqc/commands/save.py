@@ -51,8 +51,7 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
     for i in range(len(batch_dir_list)):
         directory = batch_dir_list[i]
         sample_metadata = metadata_file_list[i]
-        print(f'Saving: {batch_dir_list[i]}...')
-        print(f'Saving: {metadata_file_list[i]}...')
+        print(f'Saving: {batch_dir_list[i]}...\nSaving: {metadata_file_list[i]}...')
 
         with open(directory + "/multiqc_data/multiqc_data.json") as multiqc_data:
             with open(sample_metadata) as sample_metadata:
