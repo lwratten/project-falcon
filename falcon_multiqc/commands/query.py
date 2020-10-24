@@ -142,7 +142,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
         click.echo(f'total query was: {len(sample_list_tm)}') # temp
         for row in sample_list_tm:
             if row.sample_id == prev:
-                continue # filters out duplicates
+                continue # filters out duplicates - NOTE duplicates means sample_name satifies 2 or more of the filters which could be an additional filtering option to add
             prev = row.sample_id
             sample_name, path = session.query(Sample.sample_name, Batch.path).join(Sample).filter(Sample.id == row.sample_id).options(Load(Batch).load_only('path')).first()
             sample_path_list.append((sample_name, path)) # list of tuples
