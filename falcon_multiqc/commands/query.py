@@ -75,7 +75,6 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
 
     # start session 
     with session_scope() as session:
-
         first_loop = True
         for query in tm_query:
             query = query.split()
@@ -83,7 +82,6 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
             attribute = query[1]
             operator = query[2]
             value = query[3] 
-
             if operator == '<':
                 if first_loop:
                     sample_list = session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) < value)
