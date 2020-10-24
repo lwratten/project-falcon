@@ -61,6 +61,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
         # code
         pass
 
+    # for potential future layout idea
     c_query = []
     if cohort:
         #code
@@ -72,67 +73,69 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
     [click.echo(f'{b}') for b in b_query]
     [click.echo(f'{c}') for c in c_query]
 
-    first_loop = True
-    for query in tm_query:
-        query = query.split()
-        tool = query[0]
-        attribute = query[1]
-        operator = query[2]
-        value = query[3]
+    # start session 
+    with session_scope() as session:
 
-        with session_scope() as session:
+        first_loop = True
+        for query in tm_query:
+            query = query.split()
+            tool = query[0]
+            attribute = query[1]
+            operator = query[2]
+            value = query[3] 
+
             if operator == '<':
                 if first_loop:
-                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) < value)
+                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) < value)
                 else:
-                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) < value))
+                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) < value))
                 session.expire_on_commit = False
             if operator == '>':
                 if first_loop:
-                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) > value)
+                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) > value)
                 else:
-                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) > value))
+                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) > value))
                 session.expire_on_commit = False
             if operator == '==':
                 if first_loop:
-                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) == value)
+                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) == value)
                 else:
-                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) == value))
+                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) == value))
                 session.expire_on_commit = False
             if operator == '>=':
                 if first_loop:
-                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) >= value)
+                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) >= value)
                 else:
-                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) >= value))
+                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) >= value))
                 session.expire_on_commit = False
             if operator == '<=':
                 if first_loop:
-                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) <= value)
+                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) <= value)
                 else:
-                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) <= value))
+                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) <= value))
                 session.expire_on_commit = False
             if operator == '!=':
                 if first_loop:
-                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) != value)
+                    sample_list = session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) != value)
                 else:
-                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool).filter(RawData.metrics[attribute].astext.cast(Float) != value))
+                    sample_list = sample_list.union(session.query(RawData).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) != value))
                 session.expire_on_commit = False
-        first_loop = False
-    sample_list_tm = sample_list.order_by(RawData.sample_id).all() # creates list containing every row of Rawdata accross database which satifies filtering, ordered by sample_ID
+            first_loop = False
+        sample_list_tm = sample_list.order_by(RawData.sample_id).all() # creates list containing every row of Rawdata accross database which satifies filtering, ordered by sample_ID
 
-    # for potential future layout idea
-    first_loop = True
-    sample_list = None
-    for query in b_query:
-        pass
-    sample_list_b = []
+        # for potential future layout idea
+        first_loop = True
+        sample_list = None
+        for query in b_query:
+            pass
+        sample_list_b = []
 
-    # for potential future layout idea
-    first_loop = True
-    sample_list = None
-    for query in c_query:
-        pass
-    sample_list_c = []
+        # for potential future layout idea
+        first_loop = True
+        sample_list = None
+        for query in c_query:
+            pass
+        sample_list_c = []
 
     # if select contains sample_name, list of sample_name/path will be made from the query
     if 'sample_name' in select:
