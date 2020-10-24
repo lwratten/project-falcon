@@ -17,7 +17,6 @@ from database.process_query import create_new_multiqc
 # next
 
 @click.command()
-@click.option('--shout', is_flag=True)
 @click.option('--select', is_flag=True, required=False, help = "Enter what you want to select on, e.g. select for sample_name, batch, etc. (deafult is sample_name)")
 @click.option('--tool_metric', is_flag=True, required=False, help = "Enter tool, metric, operator and number, e.g. verifybamid AVG_DP < 30")
 @click.option('--batch', is_flag=True, required=False, help = "Enter which batches to filter on e.g. AAA, BAA, etc.")
@@ -25,7 +24,7 @@ from database.process_query import create_new_multiqc
 @click.option('--multiqc', is_flag=True, required=False, help = "Creates a multiqc report (user must select only for sample_name if so)")
 @click.option('--csv', is_flag=True, required=False, help = "Creates a csv report")
 @click.option("-d", "--directory", type=click.STRING, required=True, help="where query result will be saved")
-def cli(shout, select, tool_metric, batch, cohort, multiqc, csv, directory):
+def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
 
     if not select:
         select = ['sample_name']
