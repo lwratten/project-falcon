@@ -74,7 +74,6 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
 
     first_loop = True
     for query in tm_query:
-        print(f'query is: {query}')
         query = query.split()
         tool = query[0]
         attribute = query[1]
@@ -139,7 +138,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
     if 'sample_name' in select:
         prev = None
         sample_path_list = []
-        print(f'total query was: {len(sample_list_tm)}') # temp
+        click.echo(f'total query was: {len(sample_list_tm)}') # temp
         for row in sample_list_tm:
             if row.sample_id == prev:
                 continue # filters out duplicates
