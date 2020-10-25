@@ -74,7 +74,8 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
     [click.echo(f'{c}') for c in c_query_list]
 
     # start session 
-    if tm_query_list:
+    sample_query_set = set() # acts as global set for storing sample_id related queries 
+    if tm_query_list and 'sample_name' in select:
         with session_scope() as session:
             first_loop = True
             for query in tm_query_list:
@@ -123,7 +124,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
             sample_query_set = set(tm_query.all()) # creates set containing every RawData.sample_id filtered accross database which satifies filtering, this acts as a global query set for samples
 
     # for potential future layout idea
-    if b_query_list:
+    if b_query_list and 'sample_name' in select:
         with session_scope() as session: 
             first_loop = True
             b_query = None
@@ -135,7 +136,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
                 sample_query_set = set(b_query.all()) # if the global sample query set IS empty, then populate it with the batch query result etc. 
 
     # for potential future layout idea
-    if c_query_list:
+    if c_query_list and 'sample_name' in select:
         with session_scope() as session:
             first_loop = True
             c_query = None
