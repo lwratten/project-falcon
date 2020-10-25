@@ -5,7 +5,7 @@ from database.crud import session_scope
 from database.models import *
 from sqlalchemy import Float
 from sqlalchemy.orm import load_only,Load
-from database.process_query import create_new_multiqc
+from database.process_query import create_new_multiqc, create_csv
 
 # example command:
 # falcon_multiqc query --tool_metric --multiqc -d path
@@ -73,9 +73,10 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
     [click.echo(f'{b}') for b in b_query_list]
     [click.echo(f'{c}') for c in c_query_list]
 
-    # start session 
+    ### ================================= FILTER SECTION ==========================================####
+
     sample_query_set = set() # acts as global set for storing sample_id related queries 
-    if tm_query_list and 'sample_name' in select:
+    if tm_query_list:
         with session_scope() as session:
             first_loop = True
             for query in tm_query_list:
@@ -124,7 +125,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
             sample_query_set = set(tm_query.all()) # creates set containing every RawData.sample_id filtered accross database which satifies filtering, this acts as a global query set for samples
 
     # for potential future layout idea
-    if b_query_list and 'sample_name' in select:
+    if b_query_list:
         with session_scope() as session: 
             first_loop = True
             b_query = None
@@ -136,7 +137,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
                 sample_query_set = set(b_query.all()) # if the global sample query set IS empty, then populate it with the batch query result etc. 
 
     # for potential future layout idea
-    if c_query_list and 'sample_name' in select:
+    if c_query_list:
         with session_scope() as session:
             first_loop = True
             c_query = None
@@ -147,6 +148,8 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
             else:
                 sample_query_set = set(c_query.all())
 
+    ### ================================= SELECT SECTION ==========================================####
+
     # if select contains sample_name, list of sample_name/path will be made from the query
     if 'sample_name' in select:
         with session_scope() as session:
@@ -156,6 +159,37 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
                 sample_name, path = session.query(Sample.sample_name, Batch.path).join(Batch).filter(Sample.id == sample_id[0]).first()
                 sample_path_list.append((sample_name, path)) # list of tuples
 
+    #example
+    if 'qctool' in select:
+        with session_scope() as session:
+            tool_list = []
+            for sample_id in sample_query_set: # this set will contain only sample_IDs which satisfy all fliter conditions (i.e. tool/metric/batch/cohort)
+                tool = session.query(RawData.qc_tool).filter(Sample.id == sample_id[0]).first()
+                tool_list.append(tool) # list of tuples
+            tool_set = set(tool_list)
+
+    #example
+    if 'metric' in select:
+        with session_scope() as session:
+            metric_list = []
+            for sample_id in sample_query_set: # this set will contain only sample_IDs which satisfy all fliter conditions (i.e. tool/metric/batch/cohort)
+                metric = session.query(RawData.metrics).filter(Sample.id == sample_id[0]).first()
+                metric_list.append(metric) # list of tuples
+            metric_set = set(metric_list)
+
+    #example
+    if 'batch' in select:
+        with session_scope() as session:
+            batch_list = []
+            for sample_id in sample_query_set: # this set will contain only sample_IDs which satisfy all fliter conditions (i.e. tool/metric/batch/cohort)
+                batch_name = session.query(Batch.batch_name).filter(Sample.id == sample_id[0]).first()
+                batch_list.append(batch_name) # list of tuples
+            batch_set = set(batch_list)
+
     if multiqc:
         click.echo("creating multiqc report...")
         create_new_multiqc(sample_path_list, directory)
+
+    if csv:
+        click.echo("creating csv report...")
+        create_csv(metric_set, directory)
