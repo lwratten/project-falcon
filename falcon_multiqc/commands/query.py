@@ -75,7 +75,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
 
     ### ================================= FILTER SECTION ==========================================####
 
-    sample_query_set = set() # acts as global set for storing sample_id related queries 
+    sample_query_set = set() # acts as global set for storing sample_id - this set can be used for perform any potential SELECT action (see the SELECT SECTION)
     if tm_query_list:
         with session_scope() as session:
             first_loop = True
@@ -185,6 +185,15 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
                 batch_name = session.query(Batch.batch_name).filter(Sample.id == sample_id[0]).first()
                 batch_list.append(batch_name) # list of tuples
             batch_set = set(batch_list)
+
+    #example
+    if 'sample_batch' in select:
+        with session_scope() as session:
+            sample_batch_list = []
+            for sample_id in sample_query_set: # this set will contain only sample_IDs which satisfy all fliter conditions (i.e. tool/metric/batch/cohort)
+                sample_name, batch_name = session.query(Sample.sample_name, Batch.batch_name).join(Batch).filter(Sample.id == sample_id[0]).first()
+                sample_batch_list.append((sample_name, batch_name)) # list of tuples
+            sample_batch_set = set(sample_batch_list)            
 
     if multiqc:
         click.echo("creating multiqc report...")
