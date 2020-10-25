@@ -75,7 +75,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, directory):
 
     ### ================================= FILTER SECTION ==========================================####
 
-    sample_query_set = set() # acts as global set for storing sample_id - this set can be used for perform any potential SELECT action (see the SELECT SECTION)
+    sample_query_set = set() # acts as global set for storing sample_id - this set can be used to perform any potential SELECT action (see the SELECT SECTION)
     if tm_query_list:
         with session_scope() as session:
             first_loop = True
