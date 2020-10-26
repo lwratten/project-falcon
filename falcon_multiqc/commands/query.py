@@ -22,6 +22,7 @@ from database.process_query import create_new_multiqc, create_csv
 # picard_insertSize MEAN_INSERT_SIZE > 390
 # picard_wgsmetrics PCT_EXC_DUPE <= 0.021
 
+# feel free to implment a better user interaction method
 @click.command()
 @click.option('--select', is_flag=True, required=False, help = "Enter what you want to select on, e.g. select for sample_name, batch, etc. (deafult is sample_name)")
 @click.option('--tool_metric', is_flag=True, required=False, help = "Enter tool, metric, operator and number, e.g. verifybamid AVG_DP < 30")
@@ -84,9 +85,9 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     ### ================================= FILTER SECTION ==========================================####
 
     sample_query_set = set() # The former idea behind this set was for it to store only sample_id's 
-                             # However through testing queries against all 4500 samples, it is vastly more efficent to store at least five basic fields in this set
-                             # Those being sample_name, path, batch_name, cohortID, qc_tool
-                             # Having a global set which contains all these means you can perform any potential SELECT action (see the SELECT SECTION), at speeds matching doing it just in postgres 
+                             # However through testing queries against all 4500 samples, it is better to store more basic fields in this set
+                             # Those being sample.id, sample_name, path, batch_name, cohortID, qc_tool
+                             # Having a global set which contains all these means you can perform any potential SELECT action (see the SELECT SECTION)
     if tm_query_list:
         with session_scope() as session:
             first_loop = True
@@ -98,39 +99,39 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
                 value = query[3] 
                 if operator == '<':
                     if first_loop:
-                        tm_query = session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) < value)
+                        tm_query = session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) < value)
                     else:
-                        tm_query = tm_query.union(session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) < value))
+                        tm_query = tm_query.union(session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) < value))
                     session.expire_on_commit = False
                 if operator == '>':
                     if first_loop:
-                        tm_query = session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) > value)
+                        tm_query = session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) > value)
                     else:
-                        tm_query = tm_query.union(session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) > value))
+                        tm_query = tm_query.union(session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) > value))
                     session.expire_on_commit = False
                 if operator == '==':
                     if first_loop:
-                        tm_query = session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) == value)
+                        tm_query = session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) == value)
                     else:
-                        tm_query = tm_query.union(session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) == value))
+                        tm_query = tm_query.union(session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) == value))
                     session.expire_on_commit = False
                 if operator == '>=':
                     if first_loop:
-                        tm_query = session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) >= value)
+                        tm_query = session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) >= value)
                     else:
-                        tm_query = tm_query.union(session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) >= value))
+                        tm_query = tm_query.union(session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) >= value))
                     session.expire_on_commit = False
                 if operator == '<=':
                     if first_loop:
-                        tm_query = session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) <= value)
+                        tm_query = session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) <= value)
                     else:
-                        tm_query = tm_query.union(session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) <= value))
+                        tm_query = tm_query.union(session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) <= value))
                     session.expire_on_commit = False
                 if operator == '!=':
                     if first_loop:
-                        tm_query = session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) != value)
+                        tm_query = session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) != value)
                     else:
-                        tm_query = tm_query.union(session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) != value))
+                        tm_query = tm_query.union(session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id).filter(RawData.qc_tool == tool, RawData.metrics[attribute].astext.cast(Float) != value))
                     session.expire_on_commit = False
                 first_loop = False
             sample_query_set = set(tm_query.all()) # creates set containing every RawData.sample_id filtered accross database which satifies filtering, this acts as a global query set for samples
@@ -165,23 +166,15 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     if 'sample_name' in select:
         with session_scope() as session:
             sample_path_list = []
-            click.echo(f'total query was: {len(sample_query_set)}') # temp
-
-            #=== old method ==== (ALTHOUGH NOTE: you can still use the previous method, this applies for all the SELECT options bellow, you could use old or new method)
-            # for sample_id in sample_query_set: # this set will contain only sample_IDs which satisfy all fliter conditions (i.e. tool/metric/batch/cohort)
-            #     sample_name, path = session.query(Sample.sample_name, Batch.path).join(Batch).filter(Sample.id == sample_id[0]).first()
-            #     sample_path_list.append((sample_name, path)) # list of tuples
-            #(sample_name, path, batch_name, cohortID)
-
-            # === new method ==== Orders of magnitude faster 
-            sample_path_list = [(query[0], query[1]) for query in sample_query_set] 
+            click.echo(f'total query was: {len(sample_query_set)}') 
+            sample_path_list = [(query[1], query[2]) for query in sample_query_set] # used by multiqc function 
 
     #example
     if 'qctool' in select:
         with session_scope() as session:
             tool_list = []
-            for sample_id in sample_query_set: # this set will contain only sample_IDs which satisfy all fliter conditions (i.e. tool/metric/batch/cohort)
-                tool = session.query(RawData.qc_tool).filter(Sample.id == sample_id[0]).first()
+            for row in sample_query_set: # set contains rows consisting of: sample.id, sample_name, batch path, batch_name, cohort.id and tool, so choose what to use 
+                tool = session.query(RawData.qc_tool).filter(Sample.id == row[0]).first()
                 tool_list.append(tool) # list of tuples
             tool_set = set(tool_list)
 
@@ -189,8 +182,8 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     if 'metric' in select:
         with session_scope() as session:
             metric_list = []
-            for sample_id in sample_query_set: # this set will contain only sample_IDs which satisfy all fliter conditions (i.e. tool/metric/batch/cohort)
-                metric = session.query(RawData.metrics).filter(Sample.id == sample_id[0]).first()
+            for row in sample_query_set: # set contains rows consisting of: sample.id, sample_name, batch path, batch_name, cohort.id and tool, so choose what to use 
+                metric = session.query(RawData.metrics).filter(Sample.id == row[0]).first()
                 metric_list.append(metric) # list of tuples
             metric_set = set(metric_list)
 
@@ -198,8 +191,8 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     if 'batch' in select:
         with session_scope() as session:
             batch_list = []
-            for sample_id in sample_query_set: # this set will contain only sample_IDs which satisfy all fliter conditions (i.e. tool/metric/batch/cohort)
-                batch_name = session.query(Batch.batch_name).filter(Sample.id == sample_id[0]).first()
+            for row in sample_query_set: # set contains rows consisting of: sample.id, sample_name, batch path, batch_name, cohort.id and tool, so choose what to use 
+                batch_name = session.query(Batch.batch_name).filter(Sample.id == row[0]).first()
                 batch_list.append(batch_name) # list of tuples
             batch_set = set(batch_list)
 
@@ -207,8 +200,8 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     if 'sample_batch' in select:
         with session_scope() as session:
             sample_batch_list = []
-            for sample_id in sample_query_set: # this set will contain only sample_IDs which satisfy all fliter conditions (i.e. tool/metric/batch/cohort)
-                sample_name, batch_name = session.query(Sample.sample_name, Batch.batch_name).join(Batch).filter(Sample.id == sample_id[0]).first()
+            for row in sample_query_set: # set contains rows consisting of: sample.id, sample_name, batch path, batch_name, cohort.id and tool, so choose what to use 
+                sample_name, batch_name = session.query(Sample.sample_name, Batch.batch_name).join(Batch).filter(Sample.id == row[0]).first()
                 sample_batch_list.append((sample_name, batch_name)) # list of tuples
             sample_batch_set = set(sample_batch_list)            
 
