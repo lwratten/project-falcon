@@ -29,7 +29,7 @@ from database.process_query import create_new_multiqc, create_csv
 @click.option('--cohort', is_flag=True, required=False, help = "Enter which cohort to filter on e.g. MGRB, cohort2, etc.")
 @click.option('--multiqc', is_flag=True, required=False, help = "Creates a multiqc report (user must select only for sample_name if so)")
 @click.option('--csv', is_flag=True, required=False, help = "Creates a csv report")
-@click.option("-0", "--output", type=click.STRING, required=True, help="where query result will be saved")
+@click.option("-o", "--output", type=click.STRING, required=True, help="where query result will be saved")
 def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     """To use query tool, specify what you would like to select on by using the --select flag (when not used, deafult is sample_name),
     to specify what to filter on, choose which fields by using either --tool_metric, --batch, or --cohort flags, and then enter the what to filter on """
