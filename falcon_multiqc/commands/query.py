@@ -69,13 +69,10 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     """Query the falcon qc database by specifying what you would like to select on by using the --select option, and
     to filter on either --tool_metric, --batch, or --cohort."""
 
-    if multiqc:
-        if len(select) != 1 and select[0] != 'sample_name':
-            # TODO: support creating multiqc report with more than one thing selected.
-            # I.e. filter the result before giving to multiqc function.
-            click.echo(
-                "When multiqc report is selected, please ensure to select for only sample_name.")
-            sys.exit(1)
+    if multiqc and "sample_name" not in select:
+        click.echo(
+            "When multiqc report is selected, please ensure to select for sample_name.")
+        sys.exit(1)
 
     click.echo(f"Returning {select} by filtering for:")
     [click.echo(f'{tm}') for tm in tool_metric]
