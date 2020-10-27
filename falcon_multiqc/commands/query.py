@@ -22,7 +22,7 @@ falcon_multiqc query --tool_metric picard_wgsmetrics PCT_EXC_DUPE '<=' 0.04 -
 Example commands (large):
 falcon_multiqc query --tool_metric verifybamid AVG_DP '<' 100 --multiqc -d path
 falcon_multiqc query --tool_metric picard_insertSize MEAN_INSERT_SIZE '>' 390 --multiqc -d path
-falcon_multiqc query --tool_metric picard_wgsmetrics PCT_EXC_DUPE '<=' 0.021 --multiqc -d path
+falcon_multiqc query --tool_metric picard_wgsmetrics PCT_EXC_DUPE '<=' 0.5 --multiqc -d path
 
 Notes:
 Special characters must be escaped (wrapped in single quotes) in bash, like '<'.
