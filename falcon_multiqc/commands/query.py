@@ -86,6 +86,9 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
 
     # Having a global set which contains all these means you can perform any potential SELECT action (see the SELECT SECTION)
     sample_query_set = set()
+    # Keep track of the query header with query.column_descriptions. 
+    # TODO: This should be updated if the query is altered.
+    query_header = []
 
     if tool_metric:
         with session_scope() as session:
@@ -101,6 +104,9 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
 
             # creates set containing every RawData.sample_id filtered accross database which satifies filtering, this acts as a global query set for samples
             sample_query_set = set(tm_query.all())
+
+            for col in tm_query.column_descriptions:
+                query_header.append(col["name"])
 
     # TODO: implement filter by cohort: for potential future layout idea.
     """
@@ -187,5 +193,6 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
         create_new_multiqc(sample_path_list, output)
 
     if csv:
+        # TODO: Change tm_query input if the input changes from the above selecting.
         click.echo("creating csv report...")
-        create_csv(metric_set, output)
+        create_csv(query_header, tm_query, output)

@@ -3,14 +3,16 @@ import csv
 import subprocess 
 import glob
 
-# Creates new csv files given the metric_list (not sure what this is yet) and the abolute path for the user specified directory 
-def create_csv(metric_list, output_dir):
-    with open(metric_list, 'r') as ml:
-        csv_reader = csv.reader(ml)
-        with open(output_dir + '\metrics.csv', 'w') as metrics_csv:
-            csv_writer = csv.writer(metrics_csv, delimiter = ',')
-            for line in csv_reader:
-                csv_writer.writerow(line)
+# Creates new csv with the sqlalchemy query result in the given output directory.
+def create_csv(query_header, query_result, output_dir):
+    with open(output_dir + '\query.csv', 'w') as csv_file:
+        csv_writer = csv.writer(csv_file, delimiter = ',')
+
+        csv_writer.writerow(query_header)
+
+        for row in query_result:
+            csv_writer.writerow(row)
+
 
 # Prints the list of samples (as row) returned from query 
 def print_query(sample_list, output_dir):
