@@ -41,6 +41,8 @@ ops = {
 }
 
 # TODO: Currently only supports metrics that are float values. Support more.
+
+
 def query_metric(session, query, tool, attribute, operator, value):
     if not query:
         return (session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool)
@@ -54,9 +56,10 @@ def query_metric(session, query, tool, attribute, operator, value):
                             .join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id)
                             .filter(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value))))
 
+
 @click.command()
 @click.option('--tool_metric', multiple=True, type=(str, str, str, str), required=False, help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP < 30'.")
-@click.option('--select', multiple=True, default=["sample_name"], required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
+@click.option('--select', multiple=True, default=["sample_name"], type=click.Choice(["sample_name", "batch", "cohort", "tool"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
 @click.option('--batch', multiple=True, required=False, help="Filter by batch name: enter which batches e.g. AAA, BAA, etc.")
 @click.option('--cohort', multiple=True, required=False, help="Filter by cohort id: enter which cohorts e.g. MGRB, cohort2, etc.")
 @click.option('--multiqc', is_flag=True, required=False, help="Create a multiqc report (user must select only for sample_name if so).")
