@@ -6,7 +6,7 @@ import operator
 from database.crud import session_scope
 from database.models import *
 from sqlalchemy import Float
-from sqlalchemy.orm import load_only, Load
+from sqlalchemy.orm import load_only, Load, Query
 from database.process_query import create_new_multiqc, create_csv
 
 """
@@ -40,26 +40,56 @@ ops = {
     '!=': operator.ne
 }
 
+# User select input : SQLAlchemy falcon database columns required.
+select_columns = {
+    # If sample is selected, we need batch.path too.
+    'sample' : [Sample.id, Sample.sample_name, Batch.path],
+    'batch' : [Batch.batch_name, Batch.path],
+    'cohort' : Cohort.id,
+    'tool' : RawData.qc_tool
+}
+
+# The order of the selected columns in output.
+select_order = [Sample.id, Sample.sample_name, Cohort.id, Batch.batch_name, RawData.qc_tool, Batch.path]
+
+# Returns a sqlaclhemy query, selecting on the given columns.
+# Columns supported: 'sample' (sample_name), 'batch', 'cohort', 'tool'.
+def query_select(session, columns):
+    # Add the Sqlalchemy class columns needed for the given column selection.
+    select_cols = set()
+    for col in columns:
+        if isinstance(select_columns[col], list):
+            for x in select_columns[col]:
+                select_cols.add(x)
+        else:
+            select_cols.add(select_columns[col])
+
+    sorted_cols = sorted(select_cols, key=select_order.index)
+    
+    query = Query(sorted_cols, session=session)
+
+    # Add the table joins needed for the given column selection.
+    if 'sample' in columns or 'batch' in columns:
+        # We need Batch for batch.path for both sample and batch.
+        query = query.join(Batch, Sample.batch_id == Batch.id)
+    
+    if 'tool' in columns: 
+        query = query.join(RawData, Sample.id == RawData.sample_id)
+
+    if 'cohort' in columns:
+        query = query.join(Cohort, Sample.cohort_id == Cohort.id)
+
+    return query
+
 # TODO: Currently only supports metrics that are float values. Support more.
-
-
+# Returns a sqlalchemy query that queries the database with a filter
+# created from the given tool, attribute, operator and value. 
 def query_metric(session, query, tool, attribute, operator, value):
-    if not query:
-        return (session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool)
-                .join(RawData, Sample.id == RawData.sample_id)
-                .join(Batch, Sample.batch_id == Batch.id)
-                .join(Cohort, Sample.cohort_id == Cohort.id)
-                .filter(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value)))
-    else:
-        return (query.union(session.query(Sample.id, Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id, RawData.qc_tool)
-                            .join(RawData, Sample.id == RawData.sample_id)
-                            .join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id)
-                            .filter(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value))))
-
+    return query.filter(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value))
 
 @click.command()
+@click.option('--select', multiple=True, default=["sample"], type=click.Choice(["sample", "batch", "cohort", "tool"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
 @click.option('--tool_metric', multiple=True, type=(str, str, str, str), required=False, help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP < 30'.")
-@click.option('--select', multiple=True, default=["sample_name"], type=click.Choice(["sample_name", "batch", "cohort", "tool"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
 @click.option('--batch', multiple=True, required=False, help="Filter by batch name: enter which batches e.g. AAA, BAA, etc.")
 @click.option('--cohort', multiple=True, required=False, help="Filter by cohort id: enter which cohorts e.g. MGRB, cohort2, etc.")
 @click.option('--multiqc', is_flag=True, required=False, help="Create a multiqc report (user must select only for sample_name if so).")
@@ -69,9 +99,9 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     """Query the falcon qc database by specifying what you would like to select on by using the --select option, and
     to filter on either --tool_metric, --batch, or --cohort."""
 
-    if multiqc and "sample_name" not in select:
+    if multiqc and "sample" not in select:
         click.echo(
-            "When multiqc report is selected, please ensure to select for sample_name.")
+            "When multiqc report is selected, please ensure to select for sample.")
         sys.exit(1)
 
     click.echo(f"Returning {select} by filtering for:")
@@ -79,117 +109,47 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     [click.echo(f'{b}') for b in batch]
     [click.echo(f'{c}') for c in cohort]
 
-    ### ================================= FILTER SECTION ==========================================####
-
-    # Having a global set which contains all these means you can perform any potential SELECT action (see the SELECT SECTION)
-    sample_query_set = set()
     # Keep track of the query header with query.column_descriptions. 
     # TODO: This should be updated if the query is altered.
     query_header = []
+    # Sqlaclehmy query that will be constructed based on this command's options.
+    falcon_query = None
 
+    ### ================================= SELECT  ==========================================####
+    with session_scope() as session:
+        falcon_query = query_select(session, select)
+
+    ### ================================= FILTER  ==========================================####
+    ## 1. Tool - Metric
     if tool_metric:
         with session_scope() as session:
-            tm_query = None
             for query in tool_metric:
-                tool = query[0]
-                attribute = query[1]
-                operator = query[2]
-                value = query[3]
-
-                tm_query = query_metric(
-                    session, tm_query, tool, attribute, operator, value)
-
-            # creates set containing every RawData.sample_id filtered accross database which satifies filtering, this acts as a global query set for samples
-            sample_query_set = set(tm_query.all())
-
-            for col in tm_query.column_descriptions:
-                query_header.append(col["name"])
-
+                falcon_query = query_metric(session, falcon_query, query[0], query[1], query[2], query[3])
+    """
+    ## 2. Cohort
     # TODO: implement filter by cohort: for potential future layout idea.
-    """
+
     if cohort:
-        with session_scope() as session:
-            for query in cohort:
-                # c_query = session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id). ETC
-                pass
-            if sample_query_set:
-                sample_query_set = sample_query_set.intersection(
-                    sample_query_set, set(c_query.all()))
-            else:
-                sample_query_set = set(c_query.all())
+        add cohort filter to falcon_query
     """
     """
+    ## 3. Batch
     # TODO: implement filter by batch: for potential future layout idea.
     if batch:
-        with session_scope() as session:
-            for query in batch:
-                # b_query = session.query(Sample.sample_name, Batch.path, Batch.batch_name, Cohort.id).join(RawData, Sample.id == RawData.sample_id).join(Batch, Sample.batch_id == Batch.id).join(Cohort, Sample.cohort_id == Cohort.id). ETC
-                pass
-            if sample_query_set:  # if the global sample query set is NOT empty, then get intersection with the batch sample query result
-                sample_query_set = sample_query_set.intersection(
-                    sample_query_set, set(b_query.all()))
-            else:
-                # if the global sample query set IS empty, then populate it with the batch query result etc.
-                sample_query_set = set(b_query.all())
+        add batch filter to falcon_query
     """
 
-    ### ================================= SELECT SECTION ==========================================####
+    ### ============================== RESULT / OUTPUT =======================================####
 
-    # if select contains sample_name, list of sample_name/path will be made from the query
-    if 'sample_name' in select:
-        with session_scope() as session:
-            sample_path_list = []
-            click.echo(f'total query was: {len(sample_query_set)}')
-            # used by multiqc function
-            sample_path_list = [(query[1], query[2])
-                                for query in sample_query_set]
-
-    # example
-    if 'qctool' in select:
-        with session_scope() as session:
-            tool_list = []
-            for row in sample_query_set:  # set contains rows consisting of: sample.id, sample_name, batch path, batch_name, cohort.id and tool, so choose what to use
-                tool = session.query(RawData.qc_tool).filter(
-                    Sample.id == row[0]).first()
-                tool_list.append(tool)  # list of tuples
-            tool_set = set(tool_list)
-
-    # example
-    if 'metric' in select:
-        with session_scope() as session:
-            metric_list = []
-            for row in sample_query_set:  # set contains rows consisting of: sample.id, sample_name, batch path, batch_name, cohort.id and tool, so choose what to use
-                metric = session.query(RawData.metrics).filter(
-                    Sample.id == row[0]).first()
-                metric_list.append(metric)  # list of tuples
-            metric_set = set(metric_list)
-
-    # example
-    if 'batch' in select:
-        with session_scope() as session:
-            batch_list = []
-            for row in sample_query_set:  # set contains rows consisting of: sample.id, sample_name, batch path, batch_name, cohort.id and tool, so choose what to use
-                batch_name = session.query(Batch.batch_name).filter(
-                    Sample.id == row[0]).first()
-                batch_list.append(batch_name)  # list of tuples
-            batch_set = set(batch_list)
-
-    # example
-    if 'sample_batch' in select:
-        with session_scope() as session:
-            sample_batch_list = []
-            for row in sample_query_set:  # set contains rows consisting of: sample.id, sample_name, batch path, batch_name, cohort.id and tool, so choose what to use
-                sample_name, batch_name = session.query(Sample.sample_name, Batch.batch_name).join(
-                    Batch).filter(Sample.id == row[0]).first()
-                sample_batch_list.append(
-                    (sample_name, batch_name))  # list of tuples
-            sample_batch_set = set(sample_batch_list)
+    # Create header from the current query (falcon_query).
+    for col in falcon_query.column_descriptions:
+        query_header.append(col["entity"].__tablename__ + "." + col["name"])
 
     if multiqc:
-        click.echo("creating multiqc report...")
-        create_new_multiqc(sample_path_list, output)
+        click.echo("Creating multiqc report...")
+        create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output)
 
     if csv:
-        # TODO: Change tm_query input if the input changes from the above selecting.
         click.echo("creating csv report...")
-        create_csv(query_header, tm_query, output)
+        print(falcon_query)
+        create_csv(query_header, falcon_query, output)
