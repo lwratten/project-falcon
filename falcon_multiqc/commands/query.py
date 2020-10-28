@@ -4,7 +4,7 @@ import sys
 import operator
 
 from database.crud import session_scope
-from database.models import *
+from database.models import Base, Sample, Batch, Cohort, RawData
 from sqlalchemy import Float
 from sqlalchemy.orm import load_only, Load, Query
 from database.process_query import create_new_multiqc, create_csv
@@ -40,40 +40,42 @@ ops = {
     '!=': operator.ne
 }
 
-# User select input : SQLAlchemy falcon database columns required.
-select_columns = {
-    # If sample is selected, we need batch.path too.
-    'sample' : [Sample.id, Sample.sample_name, Batch.path],
-    'batch' : [Batch.batch_name, Batch.path],
-    'cohort' : Cohort.id,
-    'tool' : RawData.qc_tool
-}
-
-# The order of the selected columns in output.
-select_order = [Sample.id, Sample.sample_name, Cohort.id, Batch.batch_name, RawData.qc_tool, Batch.path]
-
 # Returns a sqlaclhemy query, selecting on the given columns.
 # Columns supported: 'sample' (sample_name), 'batch', 'cohort', 'tool'.
-def query_select(session, columns):
+# tool_metric is used to determine what metric to select on, if filtered.
+def query_select(session, columns, tool_metric_filters, multiqc):
     # Add the Sqlalchemy class columns needed for the given column selection.
-    select_cols = set()
-    for col in columns:
-        if isinstance(select_columns[col], list):
-            for x in select_columns[col]:
-                select_cols.add(x)
-        else:
-            select_cols.add(select_columns[col])
+    select_cols = []
 
-    sorted_cols = sorted(select_cols, key=select_order.index)
-    
-    query = Query(sorted_cols, session=session)
+    # Order of the following columns will be the order of output columns.
+    for col in columns:
+        if col == 'sample':
+            select_cols.extend([Sample.id, Sample.sample_name])
+        if col == 'cohort':
+            select_cols.append(Cohort.id)
+        if col == 'batch':
+            select_cols.append(Batch.batch_name)
+        if col == 'tool-metric':
+            select_cols.append(RawData.qc_tool)
+            # If filtering on tool, we need to select for the tool metrics.
+            if tool_metric_filters:
+                for tm in tool_metric_filters:
+                    # Use the metric name as this column's alias.
+                    c = RawData.metrics[tm[1]].label(tm[1])
+                    c.quote = True
+                    select_cols.append(c)
+    if multiqc:
+        # Need to add batch paths.
+        select_cols.append(Batch.path)
+
+    query = Query(select_cols, session=session)
 
     # Add the table joins needed for the given column selection.
     if 'sample' in columns or 'batch' in columns:
         # We need Batch for batch.path for both sample and batch.
         query = query.join(Batch, Sample.batch_id == Batch.id)
     
-    if 'tool' in columns: 
+    if 'tool-metric' in columns: 
         query = query.join(RawData, Sample.id == RawData.sample_id)
 
     if 'cohort' in columns:
@@ -85,10 +87,13 @@ def query_select(session, columns):
 # Returns a sqlalchemy query that queries the database with a filter
 # created from the given tool, attribute, operator and value. 
 def query_metric(session, query, tool, attribute, operator, value):
+    if operator not in ops:
+        # If user has not given a valid operator, do not filter on metric, just tool.
+        return query.filter(RawData.qc_tool == tool)
     return query.filter(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value))
 
 @click.command()
-@click.option('--select', multiple=True, default=["sample"], type=click.Choice(["sample", "batch", "cohort", "tool"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
+@click.option('--select', multiple=True, default=["sample"], type=click.Choice(["sample", "batch", "cohort", "tool-metric"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
 @click.option('--tool_metric', multiple=True, type=(str, str, str, str), required=False, help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP < 30'.")
 @click.option('--batch', multiple=True, required=False, help="Filter by batch name: enter which batches e.g. AAA, BAA, etc.")
 @click.option('--cohort', multiple=True, required=False, help="Filter by cohort id: enter which cohorts e.g. MGRB, cohort2, etc.")
@@ -97,7 +102,7 @@ def query_metric(session, query, tool, attribute, operator, value):
 @click.option("-o", "--output", type=click.Path(), required=True, help="Output directory where query result will be saved.")
 def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     """Query the falcon qc database by specifying what you would like to select on by using the --select option, and
-    to filter on either --tool_metric, --batch, or --cohort."""
+    what to filter on (--tool_metric, --batch, or --cohort)."""
 
     if multiqc and "sample" not in select:
         click.echo(
@@ -117,7 +122,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
 
     ### ================================= SELECT  ==========================================####
     with session_scope() as session:
-        falcon_query = query_select(session, select)
+        falcon_query = query_select(session, select, tool_metric, multiqc)
 
     ### ================================= FILTER  ==========================================####
     ## 1. Tool - Metric
@@ -140,6 +145,8 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     """
 
     ### ============================== RESULT / OUTPUT =======================================####
+    if falcon_query == None:
+        raise Exception("No results from query")
 
     # Create header from the current query (falcon_query).
     for col in falcon_query.column_descriptions:
@@ -151,5 +158,4 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
 
     if csv:
         click.echo("creating csv report...")
-        print(falcon_query)
         create_csv(query_header, falcon_query, output)
