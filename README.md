@@ -20,13 +20,11 @@ This command allows you to query the falcon multiqc database.
 - Select columns to include in output (sample [default], batch, cohort, tool-metric).
     `--select <sample>`
     (Add multiple selections by using multiple `--select` options)
-
 - Add optional filtering with `--batch`, `--cohort`, or `--tool_metric`.
     - `--batch <batch name>`
     - `--cohort <cohort id>`
     - `--tool-metric <tool name> <metric> <operator> <value>`
     (Add multiple filters by using multiple `--batch` / `--cohort` / `--tool-metric' options)
-
 - Note (--tool_metric): 
     - You must always specify 4 values. If <operator> is not valid, this is okay and the output will have the <metric> - with no filtering.
       
@@ -40,7 +38,6 @@ This command allows you to query the falcon multiqc database.
     - Special characters must be escaped (wrapped in single quotes) in bash, like '<'.
 
 - Specify output directory with `--output or -o`. 
-
 - Specify output type with either `--csv` or `--multiqc`.
    - Default output is stdout.
 
