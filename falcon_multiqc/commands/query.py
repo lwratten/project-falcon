@@ -5,7 +5,7 @@ import operator
 
 from database.crud import session_scope
 from database.models import Base, Sample, Batch, Cohort, RawData
-from sqlalchemy import Float
+from sqlalchemy import Float, or_
 from sqlalchemy.orm import load_only, Load, Query
 from database.process_query import create_new_multiqc, create_csv
 
@@ -85,13 +85,11 @@ def query_select(session, columns, tool_metric_filters, multiqc):
 # TODO: Currently only supports metrics that are float values. Support more.
 # Returns a sqlalchemy query that queries the database with a filter
 # with the given tool, attribute, operator and value.
-def filter_metric(session, query, tool, attribute, operator, value):
-    # TODO: change this to support mulitple filters.
-    # Need to support multiple filters (OR) and multiple filters (AND)
-    if operator not in ops:
-        # If user has not given a valid operator, do not filter on metric, just tool.
-        return query.filter(RawData.qc_tool == tool)
-    return query.filter(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value))
+#def filter_metric(session, query, tool_metric):
+#    if operator not in ops:
+#        # If user has not given a valid operator, do not filter on metric, just tool.
+#        return query.filter(or_(RawData.qc_tool == tool for tool, attribute, operator, value in tool_metric))
+#    return query.filter(or_(and_(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value)) for tool, attribute, operator, value in tool_metric))
 
 @click.command()
 @click.option("-s", "--select", multiple=True, default=["sample"], type=click.Choice(["sample", "batch", "cohort", "tool-metric"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
@@ -117,14 +115,15 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     falcon_query = None
 
     ### ================================= SELECT  ==========================================####
-    # TODO: fix metrics.
-    #with session_scope() as session:
-    #    falcon_query = query_select(session, select, tool_metric, multiqc)
+
+    with session_scope() as session:
+        falcon_query = query_select(session, select, tool_metric, multiqc)
 
     ### ================================= FILTER  ==========================================####
     ## 1. Tool - Metric
-    if tool_metric:
-        falcon_query = filter_metric(falcon_query, tool_metric)
+    # TODO fix metric
+    #if tool_metric:
+    #    falcon_query = filter_metric(falcon_query, tool_metric)
 
     ## 2. Cohort
     if cohort:
