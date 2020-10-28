@@ -13,11 +13,6 @@ def create_csv(query_header, query_result, output_dir):
         for row in query_result:
             csv_writer.writerow(row)
 
-
-# Prints the list of samples (as row) returned from query 
-def print_query(sample_list, output_dir):
-    [print(sample_list[i]) for i in sample_list]
-
 # Requires list containing tuples in the form (sample_name, path), and requires user specified output directory path 
 # Function will find and save all files matching sample_name and return file
 def create_new_multiqc(path_sample_list, output_dir):
@@ -35,7 +30,6 @@ def create_new_multiqc(path_sample_list, output_dir):
         for path in map_path_sample.keys(): # for each batch folder path
             os.chdir(path) # change directory to path
             for sample_name in map_path_sample[path]: # go through each sample_name in given batch folder path
-                print(f'sample id is: {sample_name}')
                 for file_name in glob.glob(sample_name + '*'): # find every file assoicated with sample_name
                     sample_filenames.write(path + '/' + file_name + '\n') # write into file
                     #TODO this is the part that takes ages because it's searching sample_name in a folder containing 96,000 files. We need to break up the folder into the 10 batch folders
