@@ -85,7 +85,7 @@ def query_select(session, columns, tool_metric_filters, multiqc):
 # TODO: Currently only supports metrics that are float values. Support more.
 # Returns a sqlalchemy query that queries the database with a filter
 # with the given tool, attribute, operator and value.
-def query_metric(session, query, tool, attribute, operator, value):
+def filter_metric(session, query, tool, attribute, operator, value):
     # TODO: change this to support mulitple filters.
     # Need to support multiple filters (OR) and multiple filters (AND)
     if operator not in ops:
@@ -94,12 +94,12 @@ def query_metric(session, query, tool, attribute, operator, value):
     return query.filter(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value))
 
 @click.command()
-@click.option('-s, --select', multiple=True, default=["sample"], type=click.Choice(["sample", "batch", "cohort", "tool-metric"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
-@click.option('--tm, --tool-metric', multiple=True, type=(str, str, str, str), required=False, help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP < 30'.")
-@click.option('-b, --batch', multiple=True, required=False, help="Filter by batch name: enter which batches e.g. AAA, BAA, etc.")
-@click.option('-c, --cohort', multiple=True, required=False, help="Filter by cohort id: enter which cohorts e.g. MGRB, cohort2, etc.")
-@click.option('--multiqc', is_flag=True, required=False, help="Create a multiqc report (user must select only for sample_name if so).")
-@click.option('--csv', is_flag=True, required=False, help="Create a csv report.")
+@click.option("-s", "--select", multiple=True, default=["sample"], type=click.Choice(["sample", "batch", "cohort", "tool-metric"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
+@click.option("-tm", "--tool-metric", multiple=True, type=(str, str, str, str), required=False, help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP < 30'.")
+@click.option("-b", "--batch", multiple=True, required=False, help="Filter by batch name: enter which batches e.g. AAA, BAA, etc.")
+@click.option("-c", "--cohort", multiple=True, required=False, help="Filter by cohort id: enter which cohorts e.g. MGRB, cohort2, etc.")
+@click.option("--multiqc", is_flag=True, required=False, help="Create a multiqc report (user must select only for sample_name if so).")
+@click.option("--csv", is_flag=True, required=False, help="Create a csv report.")
 @click.option("-o", "--output", type=click.Path(), required=True, help="Output directory where query result will be saved.")
 def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     """Query the falcon qc database by specifying what you would like to select on by using the --select option, and
@@ -117,8 +117,9 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     falcon_query = None
 
     ### ================================= SELECT  ==========================================####
-    with session_scope() as session:
-        falcon_query = query_select(session, select, tool_metric, multiqc)
+    # TODO: fix metrics.
+    #with session_scope() as session:
+    #    falcon_query = query_select(session, select, tool_metric, multiqc)
 
     ### ================================= FILTER  ==========================================####
     ## 1. Tool - Metric
