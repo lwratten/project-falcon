@@ -20,17 +20,17 @@ This command allows you to query the falcon multiqc database.
 - Select columns to include in output (sample [default], batch, cohort, tool-metric).
     `--select <sample>`
     (Add multiple selections by using multiple `--select` options)
-- Add optional filtering with `--batch`, `--cohort`, or `--tool_metric`.
+- Add optional filtering with `--batch`, `--cohort`, or `--tool-metric`.
     - `--batch <batch name>`
     - `--cohort <cohort id>`
     - `--tool-metric <tool name> <metric> <operator> <value>`
     (Add multiple filters by using multiple `--batch` / `--cohort` / `--tool-metric' options)
-- Note (--tool_metric): 
+- Note (--tool-metric): 
     - You must always specify 4 values. If <operator> is not valid, this is okay and the output will have the <metric> - with no filtering.
       
-      - e.g. `falcon_multiqc query --tool_metric verifybamid AVG_DP '<' 28 -o path`
+      - e.g. `falcon_multiqc query --tool-metric verifybamid AVG_DP '<' 28 -o path`
 
-      - e.g. `falcon_multiqc query --tool_metric verifybamid AVG_DP 0 0 -o path` will select verifybamid AVG_DP in output
+      - e.g. `falcon_multiqc query --tool-metric verifybamid AVG_DP 0 0 -o path` will select verifybamid AVG_DP in output
     
 
     - `--tool metric` *MUST be the first argument* to falcon_multiqc query.
