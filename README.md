@@ -4,7 +4,8 @@ A tool for parsing multiqc reports into a database and querying from the command
 ## User instructions
 - The below dev instructions + `falcon_multiqc` command.
 - Use `falcon_multiqc --help` to see all available commands
-### Save commands
+
+### Save command
 - Use `falcon_multiqc save --help` to see how to use save.
 - E.g. `falcon_multiqc save --directory multiqc/output/path --sample_metadata meta_data_file`
 - `--sample_metadata` is a required argument - A csv with the header: `Sample,Name,Cohort,Name,Batch,Name,Flowcell.Lane,Library ID,Platform,Centre of Sequencing,Reference Genome,Type,Description`
@@ -13,6 +14,26 @@ A tool for parsing multiqc reports into a database and querying from the command
   - `--cohort_description` {string} -- Set this if the input is 1 cohort. Will apply this description to all new cohorts.
   - `--batch_metadata` {file} -- A csv with header `Batch Name,Description`. Set this if the input is multiple batches.
 
+### Query command
+This command allows you to query the falcon multiqc database.
+
+Select columns to include in output (sample [default], batch, cohort, tool-metric).
+    --select <sample>
+    (Add multiple selections by using multiple `--select` options)
+
+Add optional filtering with --batch, --cohort, or --tool_metric.
+    --batch <batch name>
+    --cohort <cohort id>
+    --tool-metric <tool name> <metric> <operator> <value>
+    (Add multiple filters by using multiple `--batch` / `--cohort` / `--tool-metric' options)
+
+Note (--tool_metric): 
+    You must always specify 4 values. If <operator> is not valid,
+    this is okay and the output will have the <metric> - with no filtering.
+
+    MUST be the first argument to falcon_multiqc query.
+
+    Special characters must be escaped (wrapped in single quotes) in bash, like '<'.
 
 ## Dev instructions
 1. `git clone https://github.com/lwratten/project-falcon.git`

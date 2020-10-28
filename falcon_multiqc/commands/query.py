@@ -12,23 +12,23 @@ from database.process_query import create_new_multiqc, create_csv
 """
 This command allows you to query the falcon multiqc database.
 
-#TODO: add all argument required and optional and explanations here, similar to save.py.
+Select columns to include in output (sample [default], batch, cohort, tool-metric).
+    --select <sample>
+    (Add multiple selections by using multiple `--select` options)
 
-Example commands (small):
-falcon_multiqc query --tool_metric verifybamid AVG_DP '<' 28 --multiqc -d path
-falcon_multiqc query --tool_metric picard_insertSize MEAN_INSERT_SIZE '>' 565 --multiqc -d path
-falcon_multiqc query --tool_metric picard_wgsmetrics PCT_EXC_DUPE '<=' 0.04 --multiqc -d path
+Add optional filtering with --batch, --cohort, or --tool_metric.
+    --batch <batch name>
+    --cohort <cohort id>
+    --tool-metric <tool name> <metric> <operator> <value>
+    (Add multiple filters by using multiple `--batch` / `--cohort` / `--tool-metric' options)
 
-Example commands (large):
-falcon_multiqc query --tool_metric verifybamid AVG_DP '<' 100 --multiqc -d path
-falcon_multiqc query --tool_metric picard_insertSize MEAN_INSERT_SIZE '>' 390 --multiqc -d path
-falcon_multiqc query --tool_metric picard_wgsmetrics PCT_EXC_DUPE '<=' 0.5 --multiqc -d path
+Note (--tool_metric): 
+    You must always specify 4 values. If <operator> is not valid,
+    this is okay and the output will have the <metric> - with no filtering.
 
-Notes:
-Special characters must be escaped (wrapped in single quotes) in bash, like '<'.
---tool_metric MUST be the first argument.
-Multiple --tool_metric's can be added as input. 
+    MUST be the first argument to falcon_multiqc query.
 
+    Special characters must be escaped (wrapped in single quotes) in bash, like '<'.
 """
 
 ops = {
@@ -85,7 +85,7 @@ def query_select(session, columns, tool_metric_filters, multiqc):
 
 # TODO: Currently only supports metrics that are float values. Support more.
 # Returns a sqlalchemy query that queries the database with a filter
-# created from the given tool, attribute, operator and value. 
+# with the given tool, attribute, operator and value.
 def query_metric(session, query, tool, attribute, operator, value):
     if operator not in ops:
         # If user has not given a valid operator, do not filter on metric, just tool.
