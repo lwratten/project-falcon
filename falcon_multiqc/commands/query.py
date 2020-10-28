@@ -60,8 +60,8 @@ def query_metric(session, query, tool, attribute, operator, value):
 @click.command()
 @click.option('--tool_metric', multiple=True, type=(str, str, str, str), required=False, help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP < 30'.")
 @click.option('--select', multiple=True, default=["sample_name"], type=click.Choice(["sample_name", "batch", "cohort", "tool"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
-@click.option('--batch', multiple=True, required=False, help="Filter by batch name: enter which batches e.g. AAA, BAA, etc.")
-@click.option('--cohort', multiple=True, required=False, help="Filter by cohort id: enter which cohorts e.g. MGRB, cohort2, etc.")
+@click.option('-b', '--batch', multiple=True, required=False, help="Filter by batch name: enter which batches e.g. AAA, BAA, etc.")
+@click.option('-c', '--cohort', multiple=True, required=False, help="Filter by cohort id: enter which cohorts e.g. MGRB, cohort2, etc.")
 @click.option('--multiqc', is_flag=True, required=False, help="Create a multiqc report (user must select only for sample_name if so).")
 @click.option('--csv', is_flag=True, required=False, help="Create a csv report.")
 @click.option("-o", "--output", type=click.Path(), required=True, help="Output directory where query result will be saved.")
@@ -193,3 +193,39 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
         # TODO: Change tm_query input if the input changes from the above selecting.
         click.echo("creating csv report...")
         create_csv(query_header, tm_query, output)
+
+    if batch:
+        with session_scope() as session:
+            click.echo("Current list of batches in database are:\n")
+            batch_list = session.query(Batch.id, Batch.cohort_id, Batch.batch_name, Batch.description).all()
+            [click.echo("Batch " + str(b)) for b in batch_list] 
+            query = click.prompt("\nPlease enter the batch ID of the html you would like to open")
+
+
+            try:
+                html_path = session.query(Batch).filter(Batch.id == query).first().path + '/multiqc_report.html'
+                click.echo(f'Opening batch ID {query}')
+                # On Mac OS use 'open' instead of 'xdg_open'
+                # in windows use os module, os.startfile(r'html_path')
+                #subprocess.call(['open', html_path]) 
+                subprocess.call(['xdg_open', html_path])
+            except AttributeError:
+                click.echo("===\nBatch ID entered is not present in Batch table.\n===")
+
+    if cohort:
+        with session_scope() as session:
+            click.echo("Current list of cohorts in database are:\n")
+            cohort_list = session.query(Cohort.id, Cohort.description).all()
+            [click.echo("Cohort " + str(c)) for c in cohort_list] 
+            query = click.prompt("\nPlease enter the cohort ID of the html you would like to open")
+
+            try:
+                html_path = session.query(Batch).filter(Batch.cohort_id == query).first().path + '/multiqc_report.html'
+                click.echo(html_path)
+                click.echo(f'Opening cohort ID {query}')
+                # On Mac OS use 'open' instead of 'xdg_open'
+                # in windows use os module, os.startfile(r'html_path')
+                #subprocess.call(['open', html_path]) 
+                subprocess.call(['xdg_open', html_path]) # in windows use os module, os.startfile(r'html_path')
+            except AttributeError:
+                click.echo("===\nCohort ID entered is not present in Cohort table.\n===")
