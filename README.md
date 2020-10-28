@@ -18,22 +18,28 @@ A tool for parsing multiqc reports into a database and querying from the command
 This command allows you to query the falcon multiqc database.
 
 Select columns to include in output (sample [default], batch, cohort, tool-metric).
-    --select <sample>
+    `--select <sample>`
     (Add multiple selections by using multiple `--select` options)
 
-Add optional filtering with --batch, --cohort, or --tool_metric.
-    --batch <batch name>
-    --cohort <cohort id>
-    --tool-metric <tool name> <metric> <operator> <value>
+Add optional filtering with `--batch`, `--cohort`, or `--tool_metric`.
+    `--batch <batch name>`
+    `--cohort <cohort id>`
+    `--tool-metric <tool name> <metric> <operator> <value>`
     (Add multiple filters by using multiple `--batch` / `--cohort` / `--tool-metric' options)
 
 Note (--tool_metric): 
-    You must always specify 4 values. If <operator> is not valid,
-    this is okay and the output will have the <metric> - with no filtering.
+    - You must always specify 4 values. If <operator> is not valid, this is okay and the output will have the <metric> - with no filtering.
+      - e.g. `falcon_multiqc query --tool_metric verifybamid AVG_DP '<' 28 -o path`
+      - e.g. `falcon_multiqc query --tool_metric verifybamid AVG_DP 0 0 -o path` will select verifybamid AVG_DP in output
+    - `--tool metric` *MUST be the first argument* to falcon_multiqc query.
 
-    MUST be the first argument to falcon_multiqc query.
+    - Special characters must be escaped (wrapped in single quotes) in bash, like '<'.
 
-    Special characters must be escaped (wrapped in single quotes) in bash, like '<'.
+Specify output directory with `--output or -o`. 
+
+Specify output type with either `--csv` or `--multiqc`.
+- Default output is stdout.
+
 
 ## Dev instructions
 1. `git clone https://github.com/lwratten/project-falcon.git`

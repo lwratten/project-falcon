@@ -109,11 +109,6 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
             "When multiqc report is selected, please ensure to select for sample.")
         sys.exit(1)
 
-    click.echo(f"Returning {select} by filtering for:")
-    [click.echo(f'{tm}') for tm in tool_metric]
-    [click.echo(f'{b}') for b in batch]
-    [click.echo(f'{c}') for c in cohort]
-
     # Keep track of the query header with query.column_descriptions. 
     # TODO: This should be updated if the query is altered.
     query_header = []
@@ -159,3 +154,9 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     if csv:
         click.echo("creating csv report...")
         create_csv(query_header, falcon_query, output)
+
+    if not multiqc and not csv:
+        # Print result
+        click.echo(query_header)
+        for row in falcon_query:
+            click.echo(row)
