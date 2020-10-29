@@ -60,7 +60,7 @@ def query_select(session, columns, tool_metric_filters, multiqc):
             if tool_metric_filters:
                 for tm in tool_metric_filters:
                     # Use the metric name as this column's alias.
-                    c = RawData.metrics[tm[1]].label(tm[1])
+                    c = func.max(RawData.metrics[tm[1]].astext).label(tm[1])
                     c.quote = True
                     select_cols.append(c)
     if multiqc:
@@ -92,8 +92,9 @@ def query_metric(session, query, operators, tool_metric):
             # NOTE this doesn't really work as intended, because if only 1/4 opr are not in ops it will still query all tools - need better method
             return query.filter(or_(RawData.qc_tool == tool for tool, attribute, operator, value in tool_metric))
 
-    return query.filter(or_(and_(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value)) for \
-            tool, attribute, operator, value in tool_metric)).group_by(RawData.sample_id).having(func.count(RawData.sample_id) == len(tool_metric))
+    return (query.filter(or_(and_(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value)) 
+                for tool, attribute, operator, value in tool_metric))
+            .group_by(Sample.id, Batch.id).having(func.count(RawData.qc_tool) == len(tool_metric)))
 
 @click.command()
 @click.option("-s", "--select", multiple=True, default=["sample"], type=click.Choice(["sample", "batch", "cohort", "tool-metric"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
@@ -126,11 +127,8 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     ### ================================= FILTER  ==========================================####
 
     if tool_metric:
-        with session_scope() as session:
-            operators = [o for t, m, o , v in tool_metric] # NOTE this is used to detecting false operators later on, don't really like it
-            tm_query = session.query(RawData.sample_id)
-            tm_query = query_metric(session, tm_query, operators, tool_metric) # inner query which returns sample_id which satisfy all tm filters simultanesouly
-            falcon_query = falcon_query.filter(Sample.id.in_(tm_query)) # apply inner query to filter of outer query - NOTE don't select for tool-metric if using this
+        operators = [o for t, m, o , v in tool_metric] # NOTE this is used to detecting false operators later on, don't really like it
+        falcon_query = query_metric(session, falcon_query, operators, tool_metric) # inner query which returns sample_id which satisfy all tm filters simultanesouly
 
     ## 2. Cohort
     if cohort:
@@ -141,11 +139,13 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
         falcon_query = falcon_query.filter(Batch.batch_name.in_(batch))
 
     ### ============================== RESULT / OUTPUT =======================================####
+    print(falcon_query)
     if falcon_query == None:
         raise Exception("No results from query")
 
     # Create header from the current query (falcon_query).
     for col in falcon_query.column_descriptions:
+        print(col)
         query_header.append(col["entity"].__tablename__ + "." + col["name"])
 
     if multiqc:
