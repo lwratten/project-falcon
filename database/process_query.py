@@ -5,13 +5,12 @@ import glob
 
 # Creates new csv with the sqlalchemy query result in the given output directory.
 def create_csv(query_header, query_result, output_dir):
-    with open(output_dir + '\query.csv', 'w') as csv_file:
+    with open(output_dir + '/query.csv', 'w') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter = ',')
-
         csv_writer.writerow(query_header)
-
         for row in query_result:
             csv_writer.writerow(row)
+        print("csv report complete!")
 
 # Requires list containing tuples in the form (sample_name, path), and requires user specified output directory path 
 # Function will find and save all files matching sample_name and return file
