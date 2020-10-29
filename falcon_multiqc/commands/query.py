@@ -5,7 +5,7 @@ import operator
 
 from database.crud import session_scope
 from database.models import Base, Sample, Batch, Cohort, RawData
-from sqlalchemy import Float, or_
+from sqlalchemy import Float, or_, and_, func
 from sqlalchemy.orm import load_only, Load, Query
 from database.process_query import create_new_multiqc, create_csv
 
@@ -85,11 +85,15 @@ def query_select(session, columns, tool_metric_filters, multiqc):
 # TODO: Currently only supports metrics that are float values. Support more.
 # Returns a sqlalchemy query that queries the database with a filter
 # with the given tool, attribute, operator and value.
-#def filter_metric(session, query, tool_metric):
-#    if operator not in ops:
-#        # If user has not given a valid operator, do not filter on metric, just tool.
-#        return query.filter(or_(RawData.qc_tool == tool for tool, attribute, operator, value in tool_metric))
-#    return query.filter(or_(and_(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value)) for tool, attribute, operator, value in tool_metric))
+def query_metric(session, query, operators, tool_metric):
+    for opr in operators:
+        # If user has not given a valid operator, do not filter on metric, just tool.
+        if opr not in ops:
+            # NOTE this doesn't really work as intended, because if only 1/4 opr are not in ops it will still query all tools - need better method
+            return query.filter(or_(RawData.qc_tool == tool for tool, attribute, operator, value in tool_metric))
+
+    return query.filter(or_(and_(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value)) for \
+            tool, attribute, operator, value in tool_metric)).group_by(RawData.sample_id).having(func.count(RawData.sample_id) == len(tool_metric))
 
 @click.command()
 @click.option("-s", "--select", multiple=True, default=["sample"], type=click.Choice(["sample", "batch", "cohort", "tool-metric"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
@@ -120,10 +124,13 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
         falcon_query = query_select(session, select, tool_metric, multiqc)
 
     ### ================================= FILTER  ==========================================####
-    ## 1. Tool - Metric
-    # TODO fix metric
-    #if tool_metric:
-    #    falcon_query = filter_metric(falcon_query, tool_metric)
+
+    if tool_metric:
+        with session_scope() as session:
+            operators = [o for t, m, o , v in tool_metric] # NOTE this is used to detecting false operators later on, don't really like it
+            tm_query = session.query(RawData.sample_id)
+            tm_query = query_metric(session, tm_query, operators, tool_metric) # inner query which returns sample_id which satisfy all tm filters simultanesouly
+            falcon_query = falcon_query.filter(Sample.id.in_(tm_query)).order_by(Sample.id) # apply inner query to filter of outer query - NOTE don't select for tool-metric if using this
 
     ## 2. Cohort
     if cohort:
@@ -142,6 +149,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
         query_header.append(col["entity"].__tablename__ + "." + col["name"])
 
     if multiqc:
+        click.echo(f"Query returned {len(falcon_query.all())} samples")
         click.echo("Creating multiqc report...")
         create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output)
 
