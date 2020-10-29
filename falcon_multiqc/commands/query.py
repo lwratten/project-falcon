@@ -130,7 +130,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
             operators = [o for t, m, o , v in tool_metric] # NOTE this is used to detecting false operators later on, don't really like it
             tm_query = session.query(RawData.sample_id)
             tm_query = query_metric(session, tm_query, operators, tool_metric) # inner query which returns sample_id which satisfy all tm filters simultanesouly
-            falcon_query = falcon_query.filter(Sample.id.in_(tm_query)).order_by(Sample.id) # apply inner query to filter of outer query - NOTE don't select for tool-metric if using this
+            falcon_query = falcon_query.filter(Sample.id.in_(tm_query)) # apply inner query to filter of outer query - NOTE don't select for tool-metric if using this
 
     ## 2. Cohort
     if cohort:
