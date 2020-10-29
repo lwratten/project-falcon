@@ -21,19 +21,19 @@ This command allows you to query the falcon multiqc database.
     `--select <sample>`
     (Add multiple selections by using multiple `--select` options)
 - Add optional filtering with `--batch`, `--cohort`, or `--tool-metric`.
-    - `--batch <batch name>`
-    - `--cohort <cohort id>`
-    - `--tool-metric <tool name> <metric> <operator> <value>`
+    - `--batch <batch name>` (behaves like OR when multiple)
+    - `--cohort <cohort id>` (behaves like OR when multiple)
+    - `--tool-metric <tool name> <metric> <operator> <value>` (behaves like **AND** when multiple)
     (Add multiple filters by using multiple `--batch` / `--cohort` / `--tool-metric' options)
 - Note (--tool-metric): 
-    - You must always specify 4 values. If <operator> is not valid, this is okay and the output will have the <metric> - with no filtering.
+    - You must always specify 4 values. 
+    
+    If any <operator> is not valid, output will have the <metric>/s - with no filtering.
       
       - e.g. `falcon_multiqc query --tool-metric verifybamid AVG_DP '<' 28 -o path`
 
-      - e.g. `falcon_multiqc query --tool-metric verifybamid AVG_DP 0 0 -o path` will select verifybamid AVG_DP in output
-    
+      - e.g. `falcon_multiqc query --tool-metric verifybamid AVG_DP 0 0 -o path` will give all verifybamid AVG_DP in output
 
-    - `--tool metric` *MUST be the first argument* to falcon_multiqc query.
 
     - Special characters must be escaped (wrapped in single quotes) in bash, like '<'.
 
