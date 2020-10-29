@@ -149,7 +149,11 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
         query_header.append(col["entity"].__tablename__ + "." + col["name"])
 
     if multiqc:
-        click.echo(f"Query returned {len(falcon_query.all())} samples")
+        size = len(falcon_query.all())
+        click.echo(f"Query returned {size} samples")
+        if size == 0:
+            click.echo("warning cannot create multiqc report with no query result, exiting")
+            sys.exit(1)
         click.echo("Creating multiqc report...")
         create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output)
 
