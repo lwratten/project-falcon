@@ -17,18 +17,22 @@ Select columns to include in output (sample [default], batch, cohort, tool-metri
     (Add multiple selections by using multiple `--select` options)
 
 Add optional filtering with --batch, --cohort, or --tool_metric.
-    --batch <batch name>
-    --cohort <cohort id>
-    --tool-metric <tool name> <metric> <operator> <value>
+    --batch <batch name> (behaves like OR when multiple)
+    --cohort <cohort id> (behaves like OR when multiple)
+    --tool-metric <tool name> <metric> <operator> <value> (behaves like AND when multiple)
     (Add multiple filters by using multiple `--batch` / `--cohort` / `--tool-metric' options)
 
 Note (--tool_metric): 
-    You must always specify 4 values. If <operator> is not valid,
-    this is okay and the output will have the <metric> - with no filtering.
+    You must always specify 4 values. 
+
+    If any <operator> is not valid, output will have the <metric>s - with no filtering. So,
+    to simply output all samples with a metric, use <tool> <metric> 0 0.
 
     MUST be the first argument to falcon_multiqc query.
 
     Special characters must be escaped (wrapped in single quotes) in bash, like '<'.
+
+See example equivalent SQL of what this command does at the end of this file.
 """
 
 ops = {
@@ -85,16 +89,28 @@ def query_select(session, columns, tool_metric_filters, multiqc):
 # TODO: Currently only supports metrics that are float values. Support more.
 # Returns a sqlalchemy query that queries the database with a filter
 # with the given tool, attribute, operator and value.
-def query_metric(session, query, operators, tool_metric):
-    for opr in operators:
-        # If user has not given a valid operator, do not filter on metric, just tool.
-        if opr not in ops:
-            # NOTE this doesn't really work as intended, because if only 1/4 opr are not in ops it will still query all tools - need better method
-            return query.filter(or_(RawData.qc_tool == tool for tool, attribute, operator, value in tool_metric))
+def query_metric(query, select, tool_metric):
+    group_by_columns = []
+
+    if 'sample' in select:
+        group_by_columns.append(Sample.id)
+
+    if 'batch' in select:
+        group_by_columns.append(Batch.id)
+    
+    if 'cohort' in select:
+        group_by_columns.append(Cohort.id)
+
+    # Check operator validity.
+    # If ANY operator is invalid - we detect user wants to filter based on metric (WITHOUT a conditional value).
+    for tm in tool_metric:
+        if tm[2] not in ops:
+            return (query.filter(or_(RawData.qc_tool == tool for tool, attribute, operator, value in tool_metric))
+                .group_by(*group_by_columns).having(func.count(RawData.qc_tool) == len(tool_metric)))
 
     return (query.filter(or_(and_(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value)) 
                 for tool, attribute, operator, value in tool_metric))
-            .group_by(Sample.id, Batch.id).having(func.count(RawData.qc_tool) == len(tool_metric)))
+            .group_by(*group_by_columns).having(func.count(RawData.qc_tool) == len(tool_metric)))
 
 @click.command()
 @click.option("-s", "--select", multiple=True, default=["sample"], type=click.Choice(["sample", "batch", "cohort", "tool-metric"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
@@ -113,9 +129,6 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
             "When multiqc report is selected, please ensure to select for sample.")
         sys.exit(1)
 
-    # Keep track of the query header with query.column_descriptions. 
-    # TODO: This should be updated if the query is altered.
-    query_header = []
     # Sqlaclehmy query that will be constructed based on this command's options.
     falcon_query = None
 
@@ -127,8 +140,7 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
     ### ================================= FILTER  ==========================================####
 
     if tool_metric:
-        operators = [o for t, m, o , v in tool_metric] # NOTE this is used to detecting false operators later on, don't really like it
-        falcon_query = query_metric(session, falcon_query, operators, tool_metric) # inner query which returns sample_id which satisfy all tm filters simultanesouly
+        falcon_query = query_metric(falcon_query, select, tool_metric)
 
     ## 2. Cohort
     if cohort:
@@ -144,21 +156,16 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
         raise Exception("No results from query")
 
     # Create header from the current query (falcon_query).
+    query_header = []
     for col in falcon_query.column_descriptions:
-        print(col)
         query_header.append(col["entity"].__tablename__ + "." + col["name"])
 
     if multiqc:
-        size = len(falcon_query.all())
-        click.echo(f"Query returned {size} samples")
-        if size == 0:
-            click.echo("warning cannot create multiqc report with no query result, exiting")
-            sys.exit(1)
         click.echo("Creating multiqc report...")
         create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output)
 
     if csv:
-        click.echo("creating csv report...")
+        click.echo("Creating csv report...")
         create_csv(query_header, falcon_query, output)
 
     if not multiqc and not csv:
@@ -166,3 +173,23 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
         click.echo(query_header)
         for row in falcon_query:
             click.echo(row)
+
+"""
+Query: 
+    falcon_multiqc query --select sample --select tool-metric \
+    -tm verifybamid AVG_DP '<' 28 \
+    -tm picard_insertSize MEAN_INSERT_SIZE '>' 490 \
+    -o output
+
+SQL:
+    SELECT sample.id AS sample_id, 
+    sample.sample_name AS sample_sample_name,
+    max(raw_data.metrics ->> 'AVG_DP') AS AVG_DP, -- results in AVG_DP as its own column
+    max(raw_data.metrics ->> 'MEAN_INSERT_SIZE') AS MEAN_INSERT_SIZE -- results in MEAN_INSERT_SIZE as its own column
+    FROM sample JOIN batch ON sample.batch_id = batch.id JOIN raw_data ON sample.id = raw_data.sample_id 
+
+    WHERE (raw_data.qc_tool='verifybamid' AND CAST((raw_data.metrics ->> 'AVG_DP') AS FLOAT) < 28) 
+    OR (raw_data.qc_tool='picard_insertSize' AND CAST((raw_data.metrics ->> 'MEAN_INSERT_SIZE') AS FLOAT) > 490) 
+
+    GROUP BY sample.id HAVING count(distinct raw_data.qc_tool) = 2 -- prevents duplicate sample.id rows
+"""
