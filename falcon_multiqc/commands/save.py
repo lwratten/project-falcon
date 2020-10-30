@@ -7,11 +7,12 @@ from database.models import Base, RawData, Batch, Sample, Cohort
 
 """
 This command saves input multiqc data to the falcon multiqc database.
+It supports saving 1 cohort at a time.
 
 Required Arguments:
-    directory {path} -- Multiqc directory to save.
+    directory {path/file} -- Multiqc cohort directory to save. May also be a list of directories.
 
-    sample_metadata {file} -- A csv with the header:
+    sample_metadata {file} -- A csv with the header (or list of paths to sample_metadata files):
     "Sample,Name,Cohort,Name,Batch,Name,Flowcell.Lane,Library ID,Platform,Centre of Sequencing,Reference Genome,Type,Description"
 
 Optional Description Arguments:
@@ -28,38 +29,45 @@ Optional Description Arguments:
 @click.option("-c", "--cohort_description", type=click.STRING, required=False, help="Give every new cohort this description.")
 @click.option("-bm", "--batch_metadata", type=click.File(), required=False, help="Batch metadata file (with descriptions)")
 def cli(directory, sample_metadata, batch_description, cohort_description, batch_metadata):
-    """Saves the given directory to the falcon_multiqc database"""
-     
-    # allows for entires to come as a list of directories/metadata files 
-    if directory[-4:] == '.txt':
-        with open(directory) as dir_list:
-            batch_dir_list = [d[:-1] for d in dir_list]
-        if sample_metadata[-4:] == '.txt':
-            with open(sample_metadata) as file_list:
-                metadata_file_list = [d[:-1] for d in file_list]
-        else:
-            click.echo("If list of batch dir are provided, corresponding list of metadata files are required.")
-            sys.exit(1)
-        if len(batch_dir_list) != len(metadata_file_list):
-            click.echo("Warning, provided list of directories do not match corresponding list of metadata files.")
-            sys.exit(1)
-    else: # deafult - when a single directory or file is provided
-        batch_dir_list = [directory]
-        metadata_file_list = [sample_metadata]
-    
-    for i in range(len(batch_dir_list)):
-        directory = batch_dir_list[i]
-        sample_metadata = metadata_file_list[i]
-        print(f'Saving: {batch_dir_list[i]}...\nSaving: {metadata_file_list[i]}...')
+    """Saves the given cohort directory to the falcon_multiqc database"""
 
-        with open(directory + "/multiqc_data/multiqc_data.json") as multiqc_data:
-            with open(sample_metadata) as sample_metadata:
-                # Skip header
-                next(sample_metadata)
-                with session_scope() as session:
+    with session_scope() as session:
+
+        # Cohort id for this input. Cohort id must be the same for every batch of this input.
+        cohort_id = None
+        
+        # Check if directory is a list of directories/metadata files.
+        if directory[-4:] == '.txt':
+            with open(directory) as dir_list:
+                batch_dir_list = [d[:-1] for d in dir_list]
+
+            if sample_metadata[-4:] == '.txt':
+                with open(sample_metadata) as file_list:
+                    metadata_file_list = [d[:-1] for d in file_list]
+            else:
+                click.echo("If list of batch dir are provided, corresponding list of metadata files are required.")
+                sys.exit(1)
+
+            if len(batch_dir_list) != len(metadata_file_list):
+                click.echo("Warning, provided list of directories do not match corresponding list of metadata files.")
+                sys.exit(1)
+        else: # Default: when a single directory or file is provided
+            batch_dir_list = [directory]
+            metadata_file_list = [sample_metadata]
+        
+        for i in range(len(batch_dir_list)):
+            directory = batch_dir_list[i]
+            sample_metadata = metadata_file_list[i]
+
+            click.echo(f'Saving: {batch_dir_list[i]} with sample metadata: {metadata_file_list[i]}...')
+
+            with open(directory + "/multiqc_data/multiqc_data.json") as multiqc_data:
+                with open(sample_metadata) as sample_metadata:
+                    # Skip header
+                    next(sample_metadata)
+
                     # Keep track of samples added, so we know its primary key, when saving raw data later.
                     samples = {}  # name : primary key id
-                    cohort_id = None
 
                     for line in sample_metadata:
                         split = line.split(",")
@@ -85,6 +93,8 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
                                     description=cohort_description
                                 )
                                 session.add(cohort_row)
+                        elif split[1] != cohort_id:
+                            raise Exception(f"Input has multiple cohort ids ({cohort_id} and {split[1]}). Save supports one cohort at a time.")
 
                         if session.query(Batch).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).scalar() is None:
                             # Batch does not exist in database.
@@ -130,10 +140,16 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
                             )
                             session.add(raw_data_row)
 
-                    if batch_metadata:
-                        for line in batch_metadata:
-                            split = line.split(",")
-                            batch_name = split[0]
-                            batch_description = split[2]
-                            # Update each batch with the given batch description.
-                            session.query(Batch).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).description = batch_description
+        # Save batch metadata.
+        if batch_metadata:
+            # Skip header
+            next(batch_metadata)
+            for line in batch_metadata:
+                split = line.split(",")
+                batch_name = split[0]
+                batch_description = split[2]
+                # Update each batch with the given batch description.
+                print("updating batch " + batch_name + " with description = " + batch_description)
+                x = session.query(Batch).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).one()
+                print("found batch = " + str(x))
+                x.description = batch_description

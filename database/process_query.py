@@ -5,7 +5,7 @@ import glob
 
 # Creates new csv with the sqlalchemy query result in the given output directory.
 def create_csv(query_header, query_result, output_dir):
-    with open(output_dir + '\query.csv', 'w') as csv_file:
+    with open(output_dir + '/query.csv', 'w') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter = ',')
 
         csv_writer.writerow(query_header)
@@ -19,8 +19,11 @@ def create_new_multiqc(path_sample_list, output_dir):
     map_path_sample = {} # Dictionary to store path:sample_name key value pairs 
     config = os.path.abspath("./database/multiqc.config") # loading falconqc config file
     if type(path_sample_list) != type([]) and type(path_sample_list[0]) != type(()) and len(path_sample_list[0]) != 2:
-        print("Invalid input: this function only accepts lists containing tuples of the form (sample_name, path)")
-        return None
+        raise Exception("Invalid input: this function only accepts lists containing tuples of the form (sample_name, path)")
+
+    if len(path_sample_list == 0):
+        raise Exception("No results from query")
+
     for sample_name, path in path_sample_list:
         try:
             map_path_sample[path].append(sample_name) # add sample_name to list of a given path key (a path is generally a batch folder)
