@@ -97,8 +97,8 @@ class Batch(Base):
     samples = relationship("Sample", backref="batch")
 
     def __repr__(self):
-        return "<Batch(id='{}', cohort_id='{}', flow_cell_id='{}', path='{}' date='{}'>" \
-            .format(self.id, self.cohort_id, self.flow_cell_id, self.path, self.date)
+        return "<Batch(id='{}', batch_name='{}', cohort_id='{}', path='{}', description='{}'>" \
+            .format(self.id, self.batch_name, self.cohort_id, self.path, self.description)
 
 
 class Cohort(Base):

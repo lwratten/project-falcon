@@ -14,7 +14,8 @@ This command allows you to query the falcon multiqc database.
 
 Select columns to include in output (sample [default], batch, cohort, tool-metric).
     --select <sample>
-    (Add multiple selections by using multiple `--select` options)
+    - Add multiple selections by using multiple `--select` options)
+    - The order of these --select/s are the column order of output.
 
 Add optional filtering with --batch, --cohort, or --tool_metric.
     --batch <batch name> (behaves like OR when multiple)
@@ -51,7 +52,7 @@ def query_select(session, columns, tool_metric_filters, multiqc):
     # Add the Sqlalchemy class columns needed for the given column selection.
     select_cols = []
 
-    # Order of the following columns will be the order of output columns.
+    # Order of the column output is the order of user's --select input.
     for col in columns:
         if col == 'sample':
             select_cols.extend([Sample.id, Sample.sample_name])
@@ -113,14 +114,137 @@ def query_metric(query, select, tool_metric):
             .group_by(*group_by_columns).having(func.count(RawData.qc_tool) == len(tool_metric)))
 
 @click.command()
-@click.option("-s", "--select", multiple=True, default=["sample"], type=click.Choice(["sample", "batch", "cohort", "tool-metric"], case_sensitive=False), required=False, help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
-@click.option("-tm", "--tool-metric", multiple=True, type=(str, str, str, str), required=False, help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP < 30'.")
-@click.option("-b", "--batch", multiple=True, required=False, help="Filter by batch name: enter which batches e.g. AAA, BAA, etc.")
-@click.option("-c", "--cohort", multiple=True, required=False, help="Filter by cohort id: enter which cohorts e.g. MGRB, cohort2, etc.")
-@click.option("--multiqc", is_flag=True, required=False, help="Create a multiqc report (user must select only for sample_name if so).")
-@click.option("--csv", is_flag=True, required=False, help="Create a csv report.")
-@click.option("-o", "--output", type=click.Path(), required=True, help="Output directory where query result will be saved.")
-def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
+@click.option(
+    "-s",
+    "--select",
+    multiple=True,
+    type=click.Choice(["sample", "batch", "cohort", "tool-metric"], case_sensitive=False),
+    default=["sample"],
+    required=False,
+    help="What to select on (sample_name, batch, cohort, tool), default is sample_name.")
+
+@click.option (
+    "-tm",
+    "--tool-metric", 
+    multiple=True, 
+    type=(str, str, str, str), 
+    required=False, 
+    help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP < 30'.")
+
+@click.option(
+    "-b",
+    "--batch",
+    multiple=True,
+    required=False,
+    help="Filter by batch name: enter which batches e.g. AAA, BAA, etc.")
+
+@click.option(
+    "-c",
+    "--cohort",
+    multiple=True,
+    required=False,
+    help="Filter by cohort id: enter which cohorts e.g. MGRB, cohort2, etc.")
+
+@click.option(
+    "-bd",
+    "--batch-description",
+    multiple=True,
+    required=False,
+    help="Filter by batch description contents (contains).")
+
+@click.option(
+    "-cd",
+    "--cohort-description",
+    multiple=True,
+    required=False,
+    help="Filter by cohort description contents (contains).")
+
+@click.option(
+    "-sd",
+    "--sample-description",
+    multiple=True,
+    required=False,
+    help="Filter by sample description contents (contains).")
+
+@click.option(
+    "-fcl",
+    "--flowcell-lane",
+    multiple=True,
+    required=False,
+    help="Filter by sample flowcell lane.")
+
+@click.option(
+    "-li",
+    "--library-id",
+    multiple=True,
+    required=False,
+    help="Filter by sample library id.")
+
+@click.option(
+    "-pl",
+    "--platform",
+    multiple=True,
+    required=False,
+    help="Filter by sample platform.")
+
+@click.option(
+    "-ctr",
+    "--centre",
+    multiple=True,
+    required=False,
+    help="Filter by sample centre.")
+
+@click.option(
+    "-rf",
+    "--reference",
+    multiple=True,
+    required=False,
+    help="Filter by sample reference genome.")
+
+@click.option(
+    "-t",
+    "--type",
+    multiple=True,
+    required=False,
+    help="Filter by sample type.")
+
+@click.option(
+    "--multiqc",
+    is_flag=True,
+    required=False,
+    help="Create a multiqc report (user must select only for sample_name if so).")
+
+@click.option(
+    "--csv", 
+    is_flag=True, 
+    required=False, 
+    help="Create a csv report.")
+
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(),
+    required=True,
+    help="Output directory where query result will be saved.")    
+
+def cli(
+    select,
+    tool_metric,
+    batch,
+    cohort,
+    batch_description,
+    cohort_description,
+    sample_description,
+    flowcell_lane,
+    library_id,
+    platform,
+    centre,
+    reference,
+    type,
+    multiqc,
+    csv,
+    output):
+
     """Query the falcon qc database by specifying what you would like to select on by using the --select option, and
     what to filter on (--tool_metric, --batch, or --cohort)."""
 
@@ -139,19 +263,49 @@ def cli(select, tool_metric, batch, cohort, multiqc, csv, output):
 
     ### ================================= FILTER  ==========================================####
 
+    ## 1. Sample
     if tool_metric:
         falcon_query = query_metric(falcon_query, select, tool_metric)
+
+    if sample_description:
+        conditions = [Sample.description.contains(d, autoescape=True) for d in sample_description]
+        falcon_query = falcon_query.filter(or_(*conditions))
+    
+    if flowcell_lane:
+        falcon_query = falcon_query.filter(Sample.flowcell_lane.in_(flowcell_lane))
+
+    if library_id:
+        falcon_query = falcon_query.filter(Sample.library_id.in_(library_id))
+    
+    if platform:
+        falcon_query = falcon_query.filter(Sample.platform.in_(platform))
+
+    if centre:
+        falcon_query = falcon_query.filter(Sample.platform.in_(centre))
+
+    if reference:
+        falcon_query = falcon_query.filter(Sample.reference_genome.in_(reference))
+
+    if type:
+        falcon_query = falcon_query.filter(Sample.type.in_(type))
 
     ## 2. Cohort
     if cohort:
         falcon_query = falcon_query.filter(Cohort.id.in_(cohort))
+        
+    if cohort_description:
+        conditions = [Cohort.description.contains(d, autoescape=True) for d in cohort_description]
+        falcon_query = falcon_query.filter(or_(*conditions))
 
     ## 3. Batch
     if batch:
         falcon_query = falcon_query.filter(Batch.batch_name.in_(batch))
 
+    if batch_description:
+        conditions = [Batch.description.contains(d, autoescape=True) for d in batch_description]
+        falcon_query = falcon_query.filter(or_(*conditions))
+
     ### ============================== RESULT / OUTPUT =======================================####
-    print(falcon_query)
     if falcon_query == None:
         raise Exception("No results from query")
 

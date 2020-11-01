@@ -20,11 +20,29 @@ This command allows you to query the falcon multiqc database.
 - Select columns to include in output (sample [default], batch, cohort, tool-metric).
     `--select <sample>`
     (Add multiple selections by using multiple `--select` options)
-- Add optional filtering with `--batch`, `--cohort`, or `--tool-metric`.
-    - `--batch <batch name>` (behaves like OR when multiple)
-    - `--cohort <cohort id>` (behaves like OR when multiple)
-    - `--tool-metric <tool name> <metric> <operator> <value>` (behaves like **AND** when multiple)
-    (Add multiple filters by using multiple `--batch` / `--cohort` / `--tool-metric' options)
+
+- Add optional filtering with (all behave like OR when multiple of the same filter, except for `--tool-metric` which behaves like AND):
+
+    - Cohort Filtering:
+      - `--cohort <cohort id>` 
+      - `--cohort-description <"description">` (contains)
+
+    - Batch Filtering:
+      - `--batch <batch name>`
+      - `--batch-description <"description">` (contains)
+      
+    - Sample filtering:
+      - `--tool-metric <tool name> <metric> <operator> <value>` (behaves like **AND** when multiple)
+      - `--sample-description <"description">` (contains)
+      - `--flowcell-lane <sample flow cell name>` 
+      - `--library-id <sample library id>` 
+      - `--centre <sample centre>` 
+      - `--reference <sample reference genome>` 
+      - `--type <sample type>` 
+      - `--platform <sample platform>` 
+
+    (Add multiple filters by using multiple `--batch` / `--cohort` / `--tool-metric' etc. options)
+    
 - Note (--tool-metric): 
     - You must always specify 4 values. 
     
