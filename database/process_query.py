@@ -12,6 +12,7 @@ def create_csv(query_header, query_result, output_dir):
 
         for row in query_result:
             csv_writer.writerow(row)
+    print("csv report created!")
 
 # Requires list containing tuples in the form (sample_name, path), and requires user specified output directory path 
 # Function will find and save all files matching sample_name and return file
@@ -21,7 +22,7 @@ def create_new_multiqc(path_sample_list, output_dir):
     if type(path_sample_list) != type([]) and type(path_sample_list[0]) != type(()) and len(path_sample_list[0]) != 2:
         raise Exception("Invalid input: this function only accepts lists containing tuples of the form (sample_name, path)")
 
-    if len(path_sample_list == 0):
+    if len(path_sample_list) == 0:
         raise Exception("No results from query")
 
     for sample_name, path in path_sample_list:
