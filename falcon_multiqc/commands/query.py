@@ -43,15 +43,6 @@ ops = {
 def query_select(session, columns, join, tool_metric_filters, multiqc):
     # Add the Sqlalchemy class columns needed for the given column selection.
 
-    # this section allows for the cases where user selects/filters for tm 
-    # with/without batch/cohort without selecting/filtering for sample
-    if 'sample' not in join['joins'] and 'tool-metric' in join['joins']:
-        if columns[0] == 'tool-metric': # joins work better if this is not first
-            columns.remove('tool-metric')
-            columns.append('tool-metric')
-        if 'batch' in join['joins'] or 'cohort' in join['joins']:
-            join['joins'].add('sample')
-
     select_cols = []
 
     # Order of the column output is the order of user's --select input.
@@ -81,9 +72,12 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
 
     ### ================================= JOIN  ==========================================####
     # Add the table joins needed for the given column selection or filtering.
+    # TODO condense this with a function potentially 
 
     if 'sample' in join['joins'] and 'sample' not in join['joined']:
-        if 'batch' in join['joined']:
+        if 'tool-metric' in join['joined']:
+            query = query.join(Sample, Sample.id == RawData.sample_id)
+        elif 'batch' in join['joined']:
             query = query.join(Sample, Batch.id == Sample.batch_id)
         elif 'cohort' in join['joined']:
             query = query.join(Sample, Sample.cohort_id == Cohort.id)
@@ -91,6 +85,9 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
 
     # for multiqc we need Batch for batch.path.
     if (multiqc or 'batch' in join['joins']) and 'batch' not in join['joined']:
+        if 'tool-metric' in join['joined'] and 'sample' not in join['joined']:
+            query = query.join(Sample, Sample.id == RawData.sample_id)
+            join['joined'].add('sample')
         if 'sample' in join['joined']:
             query = query.join(Batch, Batch.id == Sample.batch_id)
         elif 'cohort' in join['joined']:
@@ -98,6 +95,9 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
         join['joined'].add('batch')
 
     if 'cohort' in join['joins'] and 'cohort' not in join['joined']:
+        if 'tool-metric' in join['joined'] and 'sample' not in join['joined']:
+            query = query.join(Sample, Sample.id == RawData.sample_id)
+            join['joined'].add('sample')
         if 'sample' in join['joined']:
             query = query.join(Cohort, Sample.cohort_id == Cohort.id)
         elif 'batch' in join['joined']:
@@ -105,6 +105,10 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
         join['joined'].add('cohort')
 
     if 'tool-metric' in join['joins'] and 'tool-metric' not in join['joined']:
+        if 'batch' in join['joined'] and 'sample' not in join['joined']:
+            query = query.join(Sample, Batch.id == Sample.batch_id)
+        elif 'cohort' in join['joined'] and 'sample' not in join['joined']:
+            query = query.join(Sample, Sample.cohort_id == Cohort.id)
         query = query.join(RawData, RawData.sample_id == Sample.id)
         join['joined'].add('tool-metric')
 
