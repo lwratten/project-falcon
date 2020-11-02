@@ -274,7 +274,7 @@ def cli(
     """Query the falcon qc database by specifying what you would like to select on by using the --select option, and
     what to filter on (--tool_metric, --batch, or --cohort)."""
 
-    if multiqc or csv and not output:
+    if (multiqc or csv) and not output:
         click.echo("When using multiqc or csv option, please specify a directory to save in using the -o option")
         sys.exit(1)
 
