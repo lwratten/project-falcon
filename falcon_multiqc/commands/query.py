@@ -289,21 +289,18 @@ def cli(
     # item in index 0 of select don't need to be added to join['joins']
     # both select and filter options influence whether certain tables need to be joined, the following handles this
 
-    select = list(select) # needed for manipulating ordering 
+    select = list(select) # needed for join section
     join = {'joins': set(), 'joined': set()} # keeping track of what needs to be joined, and what has been joined
     if multiqc and "sample" not in select:
         select.insert(0, 'sample')
-    if sample_description or flowcell_lane or library_id or platform or centre or reference or type or 'sample' in select[1:]: 
+    if sample_description or flowcell_lane or library_id or platform or centre or reference or type or 'sample' in select: 
         join['joins'].add('sample')
-    if cohort or cohort_description or 'cohort' in select[1:]:
+    if cohort or cohort_description or 'cohort' in select:
         join['joins'].add('cohort')
-    if batch or batch_description or 'batch' in select[1:]:
+    if batch or batch_description or 'batch' in select:
         join['joins'].add('batch')
-    if tool_metric or 'tool-metric' in select[1:]:
+    if tool_metric or 'tool-metric' in select:
         join['joins'].add('tool-metric')
-    if 'sample' in select and select[0] != 'sample':
-        select.remove('sample')
-        select.insert(0, 'sample') # keeping sample first helps with joining Rawdata table
     [join['joins'].add(s) for s in select]
 
     with session_scope() as session:
