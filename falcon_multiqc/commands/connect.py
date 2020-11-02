@@ -40,7 +40,7 @@ def cli(uri):
             click.echo("Please enter the username and password for your postgres server:")
             username = click.prompt("Enter username (e.g. postgres)")
             password = getpass("Enter password: ")
-            port = click.prompt("Enter port number for your server: ")
+            port = click.prompt("Enter port number for your server")
         try:
             if uri:
                 uri = re.search("//(.+):(.+)@(localhost|(?:[0-9]{1,3}\.){3}[0-9]{1,3}):(\d+)/(.+)$", uri)
