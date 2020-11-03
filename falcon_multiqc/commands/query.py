@@ -68,7 +68,7 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
         select_cols.append(Batch.path)
 
     query = Query(select_cols, session=session)
-    join['joined'].add(columns[0]) # the first select of a given query doesn't need to be explicitly joined
+    join['joined'].add(columns[0]) # The first item in select query doesn't need to be explicitly joined
 
     ### ================================= JOIN  ==========================================####
     # Add the table joins needed for the given column selection or filtering.
@@ -83,7 +83,7 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
             query = query.join(Sample, Sample.cohort_id == Cohort.id)
         join['joined'].add('sample')
 
-    # for multiqc we need Batch for batch.path.
+    # For multiqc we need Batch for batch.path.
     if (multiqc or 'batch' in join['joins']) and 'batch' not in join['joined']:
         if 'tool-metric' in join['joined'] and 'sample' not in join['joined']:
             query = query.join(Sample, Sample.id == RawData.sample_id)
@@ -286,11 +286,10 @@ def cli(
     falcon_query = None
 
     ### ================================= SELECT  ==========================================####
-    # item in index 0 of select don't need to be added to join['joins']
-    # both select and filter options influence whether certain tables need to be joined, the following handles this
+    # Both select and filter options influence whether certain tables need to be joined, the following handles this.
 
-    select = list(select) # needed for join section
-    join = {'joins': set(), 'joined': set()} # keeping track of what needs to be joined, and what has been joined
+    select = list(select) 
+    join = {'joins': set(), 'joined': set()} # Keeping track of what needs to be joined, and what has been joined.
     if multiqc and "sample" not in select:
         select.insert(0, 'sample')
     if sample_description or flowcell_lane or library_id or platform or centre or reference or type or 'sample' in select: 
@@ -368,7 +367,7 @@ def cli(
         create_csv(query_header, falcon_query, output)
 
     if not multiqc and not csv:
-        # Print result
+        # Print result.
         click.echo(query_header)
         for row in falcon_query:
             click.echo(row)
