@@ -288,8 +288,7 @@ def cli(
     ### ================================= SELECT  ==========================================####
     # item in index 0 of select don't need to be added to join['joins']
     # both select and filter options influence whether certain tables need to be joined, the following handles this
-
-    select = list(select) # needed for join section
+    
     join = {'joins': set(), 'joined': set()} # keeping track of what needs to be joined, and what has been joined
     if multiqc and "sample" not in select:
         select.insert(0, 'sample')
