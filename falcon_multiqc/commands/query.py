@@ -71,14 +71,13 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
     join['joined'].add(columns[0]) # The first item in select query doesn't need to be explicitly joined
 
     ### ================================= JOIN  ==========================================####
-    # Add the table joins needed for the given column selection or filtering.
-    # TODO condense this with a function potentially 
+    # Add the table joins needed for the given column selection or filtering.   
 
     if 'sample' in join['joins'] and 'sample' not in join['joined']:
         if 'tool-metric' in join['joined']:
             query = query.join(Sample, Sample.id == RawData.sample_id)
         elif 'batch' in join['joined']:
-            query = query.join(Sample, Batch.id == Sample.batch_id)
+            query = query.join(Sample, Sample.batch_id == Batch.id)
         elif 'cohort' in join['joined']:
             query = query.join(Sample, Sample.cohort_id == Cohort.id)
         join['joined'].add('sample')
@@ -99,14 +98,14 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
             query = query.join(Sample, Sample.id == RawData.sample_id)
             join['joined'].add('sample')
         if 'sample' in join['joined']:
-            query = query.join(Cohort, Sample.cohort_id == Cohort.id)
+            query = query.join(Cohort, Cohort.id == Sample.cohort_id)
         elif 'batch' in join['joined']:
-            query = query.join(Cohort, Batch.cohort_id == Cohort.id)
+            query = query.join(Cohort, Cohort.id == Batch.cohort_id)
         join['joined'].add('cohort')
 
     if 'tool-metric' in join['joins'] and 'tool-metric' not in join['joined']:
         if 'batch' in join['joined'] and 'sample' not in join['joined']:
-            query = query.join(Sample, Batch.id == Sample.batch_id)
+            query = query.join(Sample, Sample.batch_id == Batch.id)
         elif 'cohort' in join['joined'] and 'sample' not in join['joined']:
             query = query.join(Sample, Sample.cohort_id == Cohort.id)
         query = query.join(RawData, RawData.sample_id == Sample.id)
