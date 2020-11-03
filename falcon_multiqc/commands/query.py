@@ -326,7 +326,7 @@ def cli(
         falcon_query = falcon_query.filter(Sample.platform.in_(platform))
 
     if centre:
-        falcon_query = falcon_query.filter(Sample.platform.in_(centre))
+        falcon_query = falcon_query.filter(Sample.centre.in_(centre))
 
     if reference:
         falcon_query = falcon_query.filter(Sample.reference_genome.in_(reference))
