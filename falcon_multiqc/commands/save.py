@@ -2,6 +2,7 @@ import click
 import json
 import datetime
 import sys
+from os.path import abspath
 from database.crud import session_scope
 from database.models import Base, RawData, Batch, Sample, Cohort
 
@@ -101,7 +102,7 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
                             batch_row = Batch(
                                 cohort_id=cohort_id,
                                 batch_name=batch_name,
-                                path=directory,
+                                path=abspath(directory),
                                 description=batch_description
                             )
                             session.add(batch_row)

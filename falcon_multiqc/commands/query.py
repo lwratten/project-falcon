@@ -2,6 +2,7 @@ import click
 import subprocess
 import sys
 import operator
+import os.path
 
 from database.crud import session_scope
 from database.models import Base, Sample, Batch, Cohort, RawData
@@ -42,7 +43,6 @@ ops = {
 # tool_metric is used to determine what metric to select on, if filtered.
 def query_select(session, columns, join, tool_metric_filters, multiqc):
     # Add the Sqlalchemy class columns needed for the given column selection.
-
     select_cols = []
 
     # Order of the column output is the order of user's --select input.
@@ -283,6 +283,8 @@ def cli(
 
     # Sqlaclehmy query that will be constructed based on this command's options.
     falcon_query = None
+    if (output):
+        output = os.path.abspath(output)
 
     ### ================================= SELECT  ==========================================####
     # Both select and filter options influence whether certain tables need to be joined, the following handles this.
