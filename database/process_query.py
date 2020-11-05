@@ -2,6 +2,7 @@ import os
 import csv
 import subprocess 
 import glob
+import click
 
 # Creates new csv with the sqlalchemy query result in the given output directory.
 def create_csv(query_header, query_result, output_dir):
@@ -37,6 +38,11 @@ def create_new_multiqc(path_sample_list, output_dir):
                 for file_name in glob.glob(sample_name + '*'): # find every file assoicated with sample_name
                     sample_filenames.write(path + '/' + file_name + '\n') # write into file
                     #TODO this is the part that takes ages because it's searching sample_name in a folder containing 96,000 files. We need to break up the folder into the 10 batch folders
-    
-    subprocess.run(['multiqc', '-l', output_dir + f'/falconqc_query.txt', '-c', config, '-o', output_dir]) # run command to create new multiqc report with sample files specified
-    print("\nNew multiqc report created!\n")
+
+    process = subprocess.run(['multiqc', '-l', output_dir + f'/falconqc_query.txt', '-c', config, '-o', output_dir]) # run command to create new multiqc report with sample files specified
+    if (process.returncode == 0):
+        click.echo("New multiqc report created in " + output_dir + ".")
+    else:
+        click.echo(click.style("Failed to create multiqc report.", fg="red"))
+
+
