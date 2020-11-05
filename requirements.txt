@@ -1,3 +1,4 @@
 click==7.1.2
 sqlalchemy
 psycopg2
+multiqc
