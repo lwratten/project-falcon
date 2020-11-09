@@ -34,9 +34,6 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
 
     with session_scope() as session:
 
-        # Cohort id for this input. Cohort id must be the same for every batch of this input.
-        cohort_id = None
-        
         # Check if directory is a list of directories/metadata files.
         if directory[-4:] == '.txt':
             with open(directory) as dir_list:
@@ -61,6 +58,9 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
             sample_metadata = metadata_file_list[i]
 
             click.echo(f'Saving: {batch_dir_list[i]} with sample metadata: {metadata_file_list[i]}...')
+            
+            # Cohort id for this input. Cohort id must be the same for every batch of this input.
+            cohort_id = None
 
             with open(directory + "/multiqc_data/multiqc_data.json") as multiqc_data:
                 with open(sample_metadata) as sample_metadata:
