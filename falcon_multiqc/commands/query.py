@@ -232,7 +232,7 @@ def query_metric(query, join, tool_metric):
 
 @click.option(
     "-t",
-    "--Type",
+    "--type",
     multiple=True,
     required=False,
     help="Filter by sample type.")
@@ -269,7 +269,7 @@ def cli(
     platform,
     centre,
     reference,
-    Type,
+    type,
     multiqc,
     csv,
     output):
@@ -293,7 +293,7 @@ def cli(
     join = {'joins': set(), 'joined': set()} # Keeping track of what needs to be joined, and what has been joined.
     if multiqc and "sample" not in select:
         select.insert(0, 'sample')
-    if sample_description or flowcell_lane or library_id or platform or centre or reference or Type or 'sample' in select: 
+    if sample_description or flowcell_lane or library_id or platform or centre or reference or type or 'sample' in select: 
         join['joins'].add('sample')
     if cohort or cohort_description or 'cohort' in select:
         join['joins'].add('cohort')
@@ -331,8 +331,8 @@ def cli(
     if reference:
         falcon_query = falcon_query.filter(Sample.reference_genome.in_(reference))
 
-    if Type:
-        falcon_query = falcon_query.filter(Sample.type.in_(Type))
+    if type:
+        falcon_query = falcon_query.filter(Sample.type.in_(type))
 
     ## 2. Cohort
     if cohort:

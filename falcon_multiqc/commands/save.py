@@ -89,11 +89,11 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
                                 platform = split[5]
                                 centre = split[6]
                                 reference = split[7]
-                                Type = split[8]
+                                type = split[8]
                                 description = split[9]
                             except IndexError:
                                 raise Exception(f"Metadata format is invalid, Accepted format is:"
-                                "\n'Sample Name' 'Cohort Name' 'Batch Name' 'Flowcell.Lane' 'Library ID' 'Platform' 'Centre of Sequencing' 'Reference Genome' 'Type' 'Description'")
+                                "\n'Sample Name' 'Cohort Name' 'Batch Name' 'Flowcell.Lane' 'Library ID' 'Platform' 'Centre of Sequencing' 'Reference Genome' 'type' 'Description'")
 
                             if not cohort_id:
                                 # Get cohort id / name from the first data row (assuming the metadata is for 1 cohort).
@@ -144,7 +144,7 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
                                 centre=centre,
                                 reference_genome=reference,
                                 description=description,
-                                Type=Type
+                                type=type
                             )
                             session.add(sample_row)
                             session.flush()
@@ -201,7 +201,7 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
                 cohort_name = split[0] # to be implmented (have to modify models)
                 number_of_samples = split[1] # to be implmented (have to modify models)
                 Number_of_batches = split[2] # to be implmented (have to modify models)
-                Type = split[3] # to be implmented (have to modify models)
+                type = split[3] # to be implmented (have to modify models)
                 cohort_description = split[4]
                 # Update each Cohort with the given Cohort description.
                 try:
