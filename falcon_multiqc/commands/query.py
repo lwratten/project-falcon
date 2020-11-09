@@ -142,6 +142,13 @@ def query_metric(query, join, tool_metric):
             for tool, attribute, operator, value in tool_metric)).group_by(*group_by_columns).
             having(func.count(distinct(RawData.qc_tool)) == len(tool_metric)))
 
+
+def print_overview(session):
+    for cohort_id, batch_name in session.query(Batch.cohort_id, Batch.batch_name):
+        num_samples = session.query(Sample).join(Batch, Batch.id == Sample.batch_id).\
+        filter(Batch.batch_name == batch_name, Sample.cohort_id == cohort_id).count()
+        click.echo(f"Cohort '{cohort_id}' batch '{batch_name}' has {num_samples} number of samples")
+
 @click.command()
 @click.option(
     "-s",
@@ -250,6 +257,12 @@ def query_metric(query, join, tool_metric):
     help="Create a csv report.")
 
 @click.option(
+    "--overview", 
+    is_flag=True, 
+    required=False, 
+    help="Prints an overview of the number of samples in each batch/cohort.")
+
+@click.option(
     "-o",
     "--output",
     type=click.Path(),
@@ -272,6 +285,7 @@ def cli(
     type,
     multiqc,
     csv,
+    overview,
     output):
 
     """Query the falcon qc database by specifying what you would like to select on by using the --select option, and
@@ -367,11 +381,14 @@ def cli(
         click.echo("Creating csv report...")
         create_csv(query_header, falcon_query, output)
 
-    if not multiqc and not csv:
+    if not multiqc and not csv and not overview:
         # Print result.
         click.echo(query_header)
         for row in falcon_query:
             click.echo(row)
+
+    if overview:
+        print_overview(session)
 
 """
 Query: 
