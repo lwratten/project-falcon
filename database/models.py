@@ -114,8 +114,8 @@ class Cohort(Base):
     samples = relationship("Sample", backref="cohort")
 
     def __repr__(self):
-        return "<Cohort(id='{}'，disease='{}，size='{}''>" \
-            .format(self.id, self.disease, self.size)
+        return "<Cohort(id='{}', description='{}'>" \
+            .format(self.id, self.description)
 
 def get_tables():
     tables = []

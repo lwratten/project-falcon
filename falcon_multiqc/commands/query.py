@@ -48,11 +48,11 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
     # Order of the column output is the order of user's --select input.
     for col in columns:
         if col == 'sample':
-            select_cols.extend([Sample.id, Sample.sample_name])
+            select_cols.extend([Sample.id, Sample.sample_name, Sample.flowcell_lane, Sample.library_id, Sample.platform, Sample.centre, Sample.reference_genome, Sample.description])
         if col == 'cohort':
-            select_cols.append(Cohort.id)
+            select_cols.extend([Cohort.id, Cohort.description])
         if col == 'batch':
-            select_cols.append(Batch.batch_name)
+            select_cols.extend([Batch.batch_name, Batch.description])
         if col == 'tool-metric':
             # If filtering on tool, we need to select for the tool metrics.
             if tool_metric_filters:
