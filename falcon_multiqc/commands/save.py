@@ -129,7 +129,7 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
                                     Sample.cohort_id == cohort_id).count()
                                     raise Exception(f"Duplicate data entry detected.\nIn metadata file {sample_metadata_name}, batch {batch_name}"
                                         f" from cohort {cohort_id} already exists in the database with {num_samples} sample entries"
-                                        f"\nAll entries added from this metadata.csv and its respective multiqc directory {directory_name} during this session will be rollbacked.")
+                                        f"\nAll entries added during this session will be rollbacked and nothing has been added to the database, please retry.")
                             else:
                                 batch_id = session.query(Batch).filter(
                                     Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).one().id
@@ -163,15 +163,14 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
                                         metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
                                     )
                                     session.add(raw_data_row)
-                                    session.flush()
                                 except KeyError:
                                     raise Exception(f"Metadata file {sample_metadata_name} does not match with multiqc folder {directory_name} data JSON file"
                                         f"\nThe sample {sample_name} appears in the JSON, but not in the metadata file."
                                         " Please ensure the metadata file and multiqc directories are from the same batch/cohort."
-                                        f"\nAll entries added from this metadata.csv and its respective multiqc directory {directory_name} during this session will be rollbacked.")
+                                        f"\nAll entries added during this session will be rollbacked and nothing has been added to the database, please retry.")
                 
-                click.echo(f"Multiqc folder {directory_name} and metadata {sample_metadata_name} have been saved!\n")
-                session.commit() # actually commit (save to db) all rows saved during transaction for given metadata/multic_JSON to database
+            click.echo(f"All multiqc and metadata results have been saved.")
+            session.commit() # commit (save to db) all rows saved during transaction for given metadata/multic_JSON to database
 
 
         # Save batch metadata.
@@ -180,34 +179,37 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
             next(batch_metadata)
             for line in batch_metadata:
                 split = line.split(",")
-                batch_name = split[0]
-                number_of_samples = split[1] # to be implmented (have to modify models)
-                batch_description = split[2]
+                try:
+                    batch_name = split[0]
+                    batch_description = split[2]
+                except IndexError:
+                    raise Exception(f"Batch_metadata format is invalid, Accepted format is:"
+                    "\n'Batch_Name' 'Number_of_samples' 'Batch_description'")
                 # Update each batch with the given batch description.
                 try:
                     (session.query(Batch).filter(Batch.batch_name == batch_name).one().description) = batch_description
-                    session.commit()
-                    click.echo(f"Batch '{batch_name}' description has been saved.")
                 except NoResultFound:
-                    click.echo(f"Batch '{batch_name}' is not present in the database so description cannot be added, exiting.")
-                    sys.exit(1)
+                    click.echo(f"Batch '{batch_name}' is not present in the database so description cannot be added."
+                    "\nAll batch description entries have been rolled back, please retry after fixing")
+            session.commit()
+            click.echo(f"Batch descriptions has been saved.")
 
         # Save Cohort metadata.
         if cohort_metadata:
-            # Skip header
             next(cohort_metadata)
             for line in cohort_metadata:
                 split = line.split(",")
-                cohort_name = split[0] # to be implmented (have to modify models)
-                number_of_samples = split[1] # to be implmented (have to modify models)
-                Number_of_batches = split[2] # to be implmented (have to modify models)
-                type = split[3] # to be implmented (have to modify models)
-                cohort_description = split[4]
+                try:
+                    cohort_name = split[0] 
+                    cohort_description = split[4]
+                except IndexError:
+                    raise Exception(f"Cohort_metadata format is invalid, Accepted format is:"
+                    "\n'Cohort_Name' 'Number_of_samples' 'Number_of_Batches' 'type' 'Cohort_description'")
                 # Update each Cohort with the given Cohort description.
                 try:
                     (session.query(Cohort).filter(Cohort.id == cohort_name).one().description) = cohort_description
-                    session.commit()
-                    click.echo(f"Cohort '{cohort_name}' description has been saved.")
                 except NoResultFound:
-                    click.echo(f"Cohort '{cohort_name}' is not present in the database so description cannot be added, exiting.")
-                    sys.exit(1)
+                    click.echo(f"Cohort '{cohort_name}' is not present in the database so description cannot be added, exiting."
+                    "\nAll cohort description entries have been rolled back, please retry after fixing")
+            session.commit()
+            click.echo(f"Cohort descriptions has been saved.")
