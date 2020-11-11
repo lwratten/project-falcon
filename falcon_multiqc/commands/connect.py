@@ -1,6 +1,7 @@
 import click
 import re
 import sys
+import os.path
 from getpass import getpass
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import OperationalError
@@ -15,7 +16,9 @@ this command allows them to make a new one.
 
 # function to modify the config.py file with a new DATABASE_URI for the current user
 def create_config(username, password, port, uri, database):
-    with open("database/config.py", "w") as config_file:
+    # Path to config file = dir where script is running minus falcon_multiqc/commands
+    config_path = os.path.join((os.path.dirname(__file__)[:-23]), 'database', 'config.py')
+    with open(config_path, "w") as config_file:
         config_file.write("### config.py ###\n\n")
         if uri:
             config_file.write(f'DATABASE_URI = "postgres+psycopg2://{uri[0]}:{uri[1]}@{uri[2]}:{uri[3]}/{uri[4]}"')

@@ -19,17 +19,15 @@ Required Arguments:
     "Sample,Name,Cohort,Name,Batch,Name,Flowcell.Lane,Library ID,Platform,Centre of Sequencing,Reference Genome,Type,Description"
 
 Optional Description Arguments:
+    input_csv {file} -- a csv with directories and sample_metadata for bulk saving. If this option is used directory and sample_metadata are not required.
     batch_description {string} -- Set this if the input is 1 batch.
     cohort_description {string} -- Set this if the input is 1 cohort.
     batch_metadata {file} -- A csv with header "Batch Name,Description". Set this if the input is multiple batches.
-    csv {file} -- a csv with directories and sample_metadata for bulk saving. If this option is used --directory and --sample_metadata are not required.
-
 """
 
 
 def save_sample(directory, sample_metadata, session, cohort_description, batch_description):
     """Saves one result directory and sample_metadatadata to the falcon_multiqc database"""
-
 
     directory_name = basename(directory)
     sample_metadata_name = basename(sample_metadata)
@@ -86,7 +84,7 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
                         batch_row = Batch(
                             cohort_id=cohort_id,
                             batch_name=batch_name,
-                            path=abspath(directory),
+                            path=directory,
                             description=batch_description
                         )
                         session.add(batch_row)
@@ -179,7 +177,7 @@ def cli(directory, sample_metadata, input_csv, batch_description, cohort_descrip
                                     sys.exit(1)
                                 else:
                                     # save the info in that row
-                                    save_sample(row[0], row[1], session, cohort_description, batch_description)
+                                    save_sample(abspath(row[0]), row[1], session, cohort_description, batch_description)
                     else:
                         click.echo("CSV requires directory and sample_metadata headers.")
                         sys.exit(1)
@@ -193,7 +191,7 @@ def cli(directory, sample_metadata, input_csv, batch_description, cohort_descrip
                 sys.exit(1)
 
             # Default: when a single directory or file is provided
-            save_sample(directory, sample_metadata, session, cohort_description, batch_description)
+            save_sample(abspath(directory), sample_metadata, session, cohort_description, batch_description)
             
                 
         click.echo(f"All multiqc and metadata results have been saved.")
