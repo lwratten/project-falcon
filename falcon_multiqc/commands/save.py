@@ -19,11 +19,10 @@ Required Arguments:
     "Sample,Name,Cohort,Name,Batch,Name,Flowcell.Lane,Library ID,Platform,Centre of Sequencing,Reference Genome,Type,Description"
 
 Optional Description Arguments:
+    input_csv {file} -- a csv with directories and sample_metadata for bulk saving. If this option is used directory and sample_metadata are not required.
     batch_description {string} -- Set this if the input is 1 batch.
     cohort_description {string} -- Set this if the input is 1 cohort.
     batch_metadata {file} -- A csv with header "Batch Name,Description". Set this if the input is multiple batches.
-    csv {file} -- a csv with directories and sample_metadata for bulk saving. If this option is used --directory and --sample_metadata are not required.
-
 """
 
 
