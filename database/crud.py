@@ -25,10 +25,7 @@ def session_scope():
     finally:
         session.close()
 
-# Creates the database tables. Usually only done once.
-def create_database():
-    Base.metadata.create_all(engine)
-
-# Destroy database will drop all database tables.
-def destroy_database():
+# Recreate the database tables.
+def recreate_database():
     Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)

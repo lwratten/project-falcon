@@ -30,8 +30,7 @@ Optional Description Arguments:
 def save_sample(directory, sample_metadata, session, cohort_description, batch_description):
     """Saves one result directory and sample_metadatadata to the falcon_multiqc database"""
 
-    # TODO change this to the dirname/basename stuff with os.path
-    # TODO call this function for a directory and sample_name
+
     directory_name = basename(directory)
     sample_metadata_name = basename(sample_metadata)
     click.echo(f'Saving: {directory_name} with sample metadata: {sample_metadata_name}...')
@@ -52,22 +51,22 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
             for line in sample_metadata:
                 split = line.split(",")
                 try:
-                    sample_name = split[0]
-                    batch_name = split[2]
-                    flowcell_lane = split[3]
-                    library_id = split[4]
-                    platform = split[5]
-                    centre = split[6]
-                    reference = split[7]
-                    type = split[8]
-                    description = split[9]
+                    sample_name = split[0].strip(stripChars)
+                    batch_name = split[2].strip(stripChars)
+                    flowcell_lane = split[3].strip(stripChars)
+                    library_id = split[4].strip(stripChars)
+                    platform = split[5].strip(stripChars)
+                    centre = split[6].strip(stripChars)
+                    reference = split[7].strip(stripChars)
+                    type = split[8].strip(stripChars)
+                    description = split[9].strip(stripChars)
                 except IndexError:
                     raise Exception(f"Metadata format is invalid, Accepted format is:"
                     "\n'Sample Name' 'Cohort Name' 'Batch Name' 'Flowcell.Lane' 'Library ID' 'Platform' 'Centre of Sequencing' 'Reference Genome' 'type' 'Description'")
 
                 if not cohort_id:
                     # Get cohort id / name from the first data row (assuming the metadata is for 1 cohort).
-                    cohort_id = split[1]
+                    cohort_id = split[1].strip(stripChars)
                     if session.query(Cohort.id).filter_by(id=cohort_id).scalar() is None:
                         # Cohort does not exist in database.
                         cohort_row = Cohort(
@@ -75,7 +74,7 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
                             description=cohort_description
                         )
                         session.add(cohort_row)
-                elif split[1] != cohort_id:
+                elif split[1].strip(stripChars) != cohort_id:
                     raise Exception(f"Metadata input has multiple cohort ids ({cohort_id} and {split[1]}). Save supports one cohort at a time.")
                 
                 batch_id = None
@@ -124,7 +123,7 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
 
             for tool in multiqc_data_json["report_saved_raw_data"]:
                 for sample in multiqc_data_json["report_saved_raw_data"][tool]:
-                    sample_name = sample.split("_")[0]
+                    sample_name = sample.split("_")[0].strip(stripChars)
                     
                     try:
                         raw_data_row = RawData(
@@ -140,6 +139,7 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
                             f"\nAll entries added during this session will be rollbacked and nothing has been added to the database, please retry.")
 
 
+stripChars = " \n\r\t\'\""
 
 @click.command()
 @click.option("-d", "--directory", type=click.Path(exists=True), required=False, help="Path to multiqc_output directory.") 
@@ -207,8 +207,8 @@ def cli(directory, sample_metadata, input_csv, batch_description, cohort_descrip
             for line in batch_metadata:
                 split = line.split(",")
                 try:
-                    batch_name = split[0]
-                    batch_description = split[2]
+                    batch_name = split[0].strip(stripChars)
+                    batch_description = split[2].strip(stripChars)
                 except IndexError:
                     raise Exception(f"Batch_metadata format is invalid, Accepted format is:"
                     "\n'Batch_Name' 'Number_of_samples' 'Batch_description'")
@@ -227,8 +227,8 @@ def cli(directory, sample_metadata, input_csv, batch_description, cohort_descrip
             for line in cohort_metadata:
                 split = line.split(",")
                 try:
-                    cohort_name = split[0] 
-                    cohort_description = split[4]
+                    cohort_name = split[0].strip(stripChars)
+                    cohort_description = split[4].strip(stripChars)
                 except IndexError:
                     raise Exception(f"Cohort_metadata format is invalid, Accepted format is:"
                     "\n'Cohort_Name' 'Number_of_samples' 'Number_of_Batches' 'type' 'Cohort_description'")
