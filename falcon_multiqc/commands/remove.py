@@ -12,7 +12,7 @@ from database.models import Base, Batch, Cohort
 
 @click.option("-c", "--cohort", multiple=True, required=False, help="Which cohort to remove from the database. E.g. <MGRB>")
 @click.option ("-b", "--batch", multiple=True, type=(str, str), required=False, help="Which batch you want to remove from the database. E.g. <MGRB BAB>")
-@click.option("-ov", "--overview", is_flag=True, required=False, help="Prints an overview of the number of samples in each batch/cohort.")
+@click.option("--overview", is_flag=True, required=False, help="Prints an overview of the number of samples in each batch/cohort.")
 @click.command()
 def cli(cohort, batch, overview):
     """Removes all associated rows of specified batch/cohort from database."""
@@ -29,7 +29,8 @@ def cli(cohort, batch, overview):
                     session.query(Cohort.id).filter(Cohort.id == cohort_id).delete()
                     if batch:
                         click.echo("\nWarning: if both --cohort and --batch are used together, only --cohort will execute."
-                        f"\nThe following will not be executed, but may have been deleted: {list(batch)}")
+                        f"\nThe following will not be executed, but may have already been deleted if they belong to the same cohort:" 
+                        "\n{list(batch)}")
             click.echo(f"Cohort(s) {list(cohort)} and all assoicated entries have been deleted.")
         elif batch:
             for cohort_id, batch_name in batch:
