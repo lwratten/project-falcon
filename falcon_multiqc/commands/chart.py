@@ -2,17 +2,11 @@ import click
 import plotly.express as px
 import pandas as pd
 
-columns = {
-  "cohort" : "cohort.id",
-  "sample" : "sample.id",
-  "batch" : "batch.batch_name",
-}
-
 @click.command()
 @click.option("-d", "--data", type=click.File(), required=True, help="Input CSV data to chart.")
 @click.option("-o", "--output", type=click.Path(), required=True, help="Path where output should be saved.")
-@click.option("-t", "--type", type=click.Choice(["histogram", "line"], case_sensitive=False), required=True, help="Type of chart.")
-@click.option("-c", "--compare", type=click.Choice(["sample", "batch", "cohort", "metric"], case_sensitive=False), required=True, help="What column do you want to compare on the chart?")
+@click.option("-t", "--type", type=click.Choice(["histogram", "box", "bar"], case_sensitive=False), required=True, help="Type of chart.")
+@click.option("-c", "--compare", required=False, help="What column you want to compare or group by")
 def cli(data, output, type, compare):
   input_df = pd.read_csv(data)
 
@@ -25,30 +19,29 @@ def cli(data, output, type, compare):
       # Column is a metric.
       metrics.append(col)
 
-  # TODO: support every column output of query.
-  if compare == "cohort" and columns["cohort"] not in input_df.columns:
-    raise Exception("Selected to compare 'cohort' but cohort.id is not in the input csv.")
+  if compare and compare not in input_df.columns:
+    raise Exception(f"Selected to compare '{compare}' but {compare} is not in the input csv.")
 
-  elif compare == "sample" and columns["sample"] not in input_df.columns:
-    raise Exception("Selected to compare 'sample' but sample.id is not in the input csv.")
-
-  elif compare == "batch" and "batch.batch_name" not in input_df.columns:
-    raise Exception("Selected to compare 'batch' but batch.batch_name is not in the input csv.")
-
-  elif compare == "metric" and len(metrics) == 0:
-    raise Exception("Selected to compare 'metric' but no raw_data columns found in input csv.")
-
+  # Histogram supports distributions of 1 metric. Optionally comparing some column group.
+  # Shows a percent (TODO: figure out if there's some way to make y-axis 'count' label say percent count).
   if (type == "histogram"):
-    # TODO: support more than 1 metric.
-    
     fig = px.histogram(
       input_df,
       x=metrics[0],
       title=metrics[0],
       marginal="rug", # Shows a separate distribution graph up top.
-      color=columns[compare],
+      color=compare,
       barmode="overlay",
       histnorm="percent",
-      hover_data=input_df.columns)    
+      hover_data=input_df.columns)
 
-    fig.write_html(output + "/graph.html")
+  # Bar supports comparing some categorical column with 1 metric.
+  elif (type == "bar"):
+    fig = px.bar(input_df, x=compare, y=metrics[0])
+    fig.update_xaxes(type='category')
+
+  # Box supports comparing some column / group with 1 metric.
+  elif(type == "box"):
+    fig = px.box(input_df, x=compare, y=metrics[0], points="all")
+
+  fig.write_html(output + "/graph.html")
