@@ -1,8 +1,9 @@
 import click
 import json
+import csv
 import datetime
 import sys
-from os.path import abspath
+from os.path import abspath, basename, exists
 from database.crud import session_scope
 from database.models import Base, RawData, Batch, Sample, Cohort
 from sqlalchemy.orm.exc import NoResultFound
@@ -18,161 +19,183 @@ Required Arguments:
     "Sample,Name,Cohort,Name,Batch,Name,Flowcell.Lane,Library ID,Platform,Centre of Sequencing,Reference Genome,Type,Description"
 
 Optional Description Arguments:
+    input_csv {file} -- a csv with directories and sample_metadata for bulk saving. If this option is used directory and sample_metadata are not required.
     batch_description {string} -- Set this if the input is 1 batch.
     cohort_description {string} -- Set this if the input is 1 cohort.
     batch_metadata {file} -- A csv with header "Batch Name,Description". Set this if the input is multiple batches.
-
 """
+
+
+def save_sample(directory, sample_metadata, session, cohort_description, batch_description):
+    """Saves one result directory and sample_metadatadata to the falcon_multiqc database"""
+
+    directory_name = basename(directory)
+    sample_metadata_name = basename(sample_metadata)
+    click.echo(f'Saving: {directory_name} with sample metadata: {sample_metadata_name}...')
+                
+    with open(directory + "/multiqc_data/multiqc_data.json") as multiqc_data:
+
+        with open(sample_metadata) as sample_metadata:
+            # Skip header
+            next(sample_metadata)
+
+            # Keep track of samples added, so we know its primary key, when saving raw data later.
+            samples = {}  # name : primary key id
+            batches = [] # batches within given metadata 
+
+            # Cohort id for this input. Cohort id must be the same for every batch of this input.
+            cohort_id = None
+
+            for line in sample_metadata:
+                split = line.split(",")
+                try:
+                    sample_name = split[0].strip(stripChars)
+                    batch_name = split[2].strip(stripChars)
+                    flowcell_lane = split[3].strip(stripChars)
+                    library_id = split[4].strip(stripChars)
+                    platform = split[5].strip(stripChars)
+                    centre = split[6].strip(stripChars)
+                    reference = split[7].strip(stripChars)
+                    type = split[8].strip(stripChars)
+                    description = split[9].strip(stripChars)
+                except IndexError:
+                    raise Exception(f"Metadata format is invalid, Accepted format is:"
+                    "\n'Sample Name' 'Cohort Name' 'Batch Name' 'Flowcell.Lane' 'Library ID' 'Platform' 'Centre of Sequencing' 'Reference Genome' 'type' 'Description'")
+
+                if not cohort_id:
+                    # Get cohort id / name from the first data row (assuming the metadata is for 1 cohort).
+                    cohort_id = split[1].strip(stripChars)
+                    if session.query(Cohort.id).filter_by(id=cohort_id).scalar() is None:
+                        # Cohort does not exist in database.
+                        cohort_row = Cohort(
+                            id=cohort_id,
+                            description=cohort_description
+                        )
+                        session.add(cohort_row)
+                elif split[1].strip(stripChars) != cohort_id:
+                    raise Exception(f"Metadata input has multiple cohort ids ({cohort_id} and {split[1]}). Save supports one cohort at a time.")
+                
+                batch_id = None
+                if batch_name not in batches:
+                    # First time this batch_name is seen from this given metadata.csv
+                    batches.append(batch_name) 
+                    if session.query(Batch.id).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).scalar() is None:
+                        # Batch does not exist in database.
+                        batch_row = Batch(
+                            cohort_id=cohort_id,
+                            batch_name=batch_name,
+                            path=directory,
+                            description=batch_description
+                        )
+                        session.add(batch_row)
+                        session.flush()
+                        batch_id = batch_row.id
+                    else:
+                        # batch/cohort already existed in database, meaning duplicate entry - envoke traceback.
+                        num_samples = session.query(Sample).join(Batch, Batch.id == Sample.batch_id).filter(Batch.batch_name == batch_name,
+                        Sample.cohort_id == cohort_id).count()
+                        raise Exception(f"Duplicate data entry detected.\nIn metadata file {sample_metadata_name}, batch {batch_name}"
+                            f" from cohort {cohort_id} already exists in the database with {num_samples} sample entries"
+                            f"\nAll entries added during this session will be rollbacked and nothing has been added to the database, please retry.")
+                else:
+                    batch_id = session.query(Batch).filter(
+                        Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).one().id
+
+                sample_row = Sample(
+                    batch_id=batch_id,
+                    cohort_id=cohort_id,
+                    sample_name=sample_name,
+                    flowcell_lane=flowcell_lane,
+                    library_id=library_id,
+                    platform=platform,
+                    centre=centre,
+                    reference_genome=reference,
+                    description=description,
+                    type=type
+                )
+                session.add(sample_row)
+                session.flush()
+                samples[sample_name] = sample_row.id
+
+            multiqc_data_json = json.load(multiqc_data)
+
+            for tool in multiqc_data_json["report_saved_raw_data"]:
+                for sample in multiqc_data_json["report_saved_raw_data"][tool]:
+                    sample_name = sample.split("_")[0].strip(stripChars)
+                    
+                    try:
+                        raw_data_row = RawData(
+                            sample_id=samples[sample_name],
+                            qc_tool=tool[8:],
+                            metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
+                        )
+                        session.add(raw_data_row)
+                    except KeyError:
+                        raise Exception(f"Metadata file {sample_metadata_name} does not match with multiqc folder {directory} data JSON file"
+                            f"\nThe sample {sample_name} appears in the JSON, but not in the metadata file."
+                            " Please ensure the metadata file and multiqc directories are from the same batch/cohort."
+                            f"\nAll entries added during this session will be rollbacked and nothing has been added to the database, please retry.")
+
 
 stripChars = " \n\r\t\'\""
 
 @click.command()
-@click.option("-d", "--directory", type=click.Path(), required=False, help="Path to multiqc_output directory, or provide path to .txt containing list of paths") 
-@click.option("-s", "--sample_metadata", type=click.Path(), required=False, help="Sample metadata file, or provide path to .txt containing list of metadata files")
+@click.option("-d", "--directory", type=click.Path(exists=True), required=False, help="Path to multiqc_output directory.") 
+@click.option("-s", "--sample_metadata", type=click.Path(exists=True), required=False, help="Sample metadata file.")
+@click.option("-i", "--input_csv", type=click.Path(exists=True), required=False, help="CSV of paths in the format directory,sample_metadata for bulk saving.")
 @click.option("-b", "--batch_description", type=click.STRING, required=False, help="Give every new batch this description.")
 @click.option("-c", "--cohort_description", type=click.STRING, required=False, help="Give every new cohort this description.")
-@click.option("-bm", "--batch_metadata", type=click.File(), required=False, help="Batch metadata file (with descriptions)")
-@click.option("-cm", "--cohort_metadata", type=click.File(), required=False, help="Cohort metadata file (with descriptions)")
-def cli(directory, sample_metadata, batch_description, cohort_description, batch_metadata, cohort_metadata):
+@click.option("-bm", "--batch_metadata", type=click.File(), required=False, help="Batch metadata file (with descriptions).")
+@click.option("-cm", "--cohort_metadata", type=click.File(), required=False, help="Cohort metadata file (with descriptions).")
+def cli(directory, sample_metadata, input_csv, batch_description, cohort_description, batch_metadata, cohort_metadata):
     """Saves the given cohort directory to the falcon_multiqc database"""
 
     with session_scope() as session:
 
-        if directory or sample_metadata:
+        # Did we get a csv?
+        if input_csv:
+
+            # Check we actually have a csv
+            if input_csv[-4:] == '.csv':
+
+                with open(input_csv, 'r') as input_csv:
+                    csv_reader = csv.reader(input_csv)
+                    header = next(csv_reader)
+
+                    # Check the headers of the csv are directory,sample_metadata
+                    if header[0] == "directory" and header[1] == "sample_metadata":
+                        with session_scope() as session:
+                            for row in csv_reader:
+                                # Check that the files in the csv actually exist
+                                if not exists(row[0]):
+                                    click.echo(f"Error: Directory {directory} does not exist."
+                                    "\nAll database entries have been rolled back, please retry after fixing")
+                                    sys.exit(1)
+                                elif not exists(row[1]):
+                                    click.echo(f"Error: Sample metadata {sample_metadata} does not exist."
+                                    "\nAll database entries have been rolled back, please retry after fixing")
+                                    sys.exit(1)
+                                else:
+                                    # save the info in that row
+                                    save_sample(abspath(row[0]), row[1], session, cohort_description, batch_description)
+                    else:
+                        click.echo("CSV requires directory and sample_metadata headers.")
+                        sys.exit(1)
+            else:
+                click.echo("A csv file is required when using the --input_csv flag.")
+                sys.exit(1)
+
+        elif directory or sample_metadata:
             if not(directory and sample_metadata):
                 click.echo("Please specify the path to multiqc_output AND path to respective metadata.csv when saving to database")
                 sys.exit(1)
 
-            # Check if directory is a list of directories/metadata files.
-            if directory[-4:] == '.txt':
-                with open(directory) as dir_list:
-                    batch_dir_list = [d[:-1] for d in dir_list]
-
-                if sample_metadata[-4:] == '.txt':
-                    with open(sample_metadata) as file_list:
-                        metadata_file_list = [d[:-1] for d in file_list]
-                else:
-                    click.echo("If list of batch dir are provided, corresponding list of metadata files are required.")
-                    sys.exit(1)
-
-                if len(batch_dir_list) != len(metadata_file_list):
-                    click.echo("Warning, provided list of directories do not match corresponding list of metadata files.")
-                    sys.exit(1)
-            else: # Default: when a single directory or file is provided
-                batch_dir_list = [directory]
-                metadata_file_list = [sample_metadata]
+            # Default: when a single directory or file is provided
+            save_sample(abspath(directory), sample_metadata, session, cohort_description, batch_description)
             
-            for i in range(len(batch_dir_list)):
-                directory = batch_dir_list[i]
-                sample_metadata = metadata_file_list[i]
-                directory_name = directory.split('/')[-1].strip(stripChars)
-                sample_metadata_name = sample_metadata.split('/')[-1].strip(stripChars)
-                click.echo(f'Saving: {directory_name} with sample metadata: {sample_metadata_name}...')
                 
-                with open(directory + "/multiqc_data/multiqc_data.json") as multiqc_data:
-                    with open(sample_metadata) as sample_metadata:
-                        # Skip header
-                        next(sample_metadata)
-
-                        # Keep track of samples added, so we know its primary key, when saving raw data later.
-                        samples = {}  # name : primary key id
-                        batches = [] # batches within given metadata 
-
-                        # Cohort id for this input. Cohort id must be the same for every batch of this input.
-                        cohort_id = None
-
-                        for line in sample_metadata:
-                            split = line.split(",")
-                            try:
-                                sample_name = split[0].strip(stripChars)
-                                batch_name = split[2].strip(stripChars)
-                                flowcell_lane = split[3].strip(stripChars)
-                                library_id = split[4].strip(stripChars)
-                                platform = split[5].strip(stripChars)
-                                centre = split[6].strip(stripChars)
-                                reference = split[7].strip(stripChars)
-                                type = split[8].strip(stripChars)
-                                description = split[9].strip(stripChars)
-                            except IndexError:
-                                raise Exception(f"Metadata format is invalid, Accepted format is:"
-                                "\n'Sample Name' 'Cohort Name' 'Batch Name' 'Flowcell.Lane' 'Library ID' 'Platform' 'Centre of Sequencing' 'Reference Genome' 'type' 'Description'")
-
-                            if not cohort_id:
-                                # Get cohort id / name from the first data row (assuming the metadata is for 1 cohort).
-                                cohort_id = split[1].strip(stripChars)
-                                if session.query(Cohort.id).filter_by(id=cohort_id).scalar() is None:
-                                    # Cohort does not exist in database.
-                                    cohort_row = Cohort(
-                                        id=cohort_id,
-                                        description=cohort_description
-                                    )
-                                    session.add(cohort_row)
-                            elif split[1].strip(stripChars) != cohort_id:
-                                raise Exception(f"Metadata input has multiple cohort ids ({cohort_id} and {split[1]}). Save supports one cohort at a time.")
-                            
-                            batch_id = None
-                            if batch_name not in batches:
-                                # First time this batch_name is seen from this given metadata.csv
-                                batches.append(batch_name) 
-                                if session.query(Batch.id).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).scalar() is None:
-                                    # Batch does not exist in database.
-                                    batch_row = Batch(
-                                        cohort_id=cohort_id,
-                                        batch_name=batch_name,
-                                        path=abspath(directory),
-                                        description=batch_description
-                                    )
-                                    session.add(batch_row)
-                                    session.flush()
-                                    batch_id = batch_row.id
-                                else:
-                                    # batch/cohort already existed in database, meaning duplicate entry - envoke traceback.
-                                    num_samples = session.query(Sample).join(Batch, Batch.id == Sample.batch_id).filter(Batch.batch_name == batch_name,
-                                    Sample.cohort_id == cohort_id).count()
-                                    raise Exception(f"Duplicate data entry detected.\nIn metadata file {sample_metadata_name}, batch {batch_name}"
-                                        f" from cohort {cohort_id} already exists in the database with {num_samples} sample entries"
-                                        f"\nAll entries added during this session will be rollbacked and nothing has been added to the database, please retry.")
-                            else:
-                                batch_id = session.query(Batch).filter(
-                                    Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).one().id
-
-                            sample_row = Sample(
-                                batch_id=batch_id,
-                                cohort_id=cohort_id,
-                                sample_name=sample_name,
-                                flowcell_lane=flowcell_lane,
-                                library_id=library_id,
-                                platform=platform,
-                                centre=centre,
-                                reference_genome=reference,
-                                description=description,
-                                type=type
-                            )
-                            session.add(sample_row)
-                            session.flush()
-                            samples[sample_name] = sample_row.id
-
-                        multiqc_data_json = json.load(multiqc_data)
-
-                        for tool in multiqc_data_json["report_saved_raw_data"]:
-                            for sample in multiqc_data_json["report_saved_raw_data"][tool]:
-                                sample_name = sample.split("_")[0].strip(stripChars)
-                                
-                                try:
-                                    raw_data_row = RawData(
-                                        sample_id=samples[sample_name],
-                                        qc_tool=tool[8:],
-                                        metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
-                                    )
-                                    session.add(raw_data_row)
-                                except KeyError:
-                                    raise Exception(f"Metadata file {sample_metadata_name} does not match with multiqc folder {directory_name} data JSON file"
-                                        f"\nThe sample {sample_name} appears in the JSON, but not in the metadata file."
-                                        " Please ensure the metadata file and multiqc directories are from the same batch/cohort."
-                                        f"\nAll entries added during this session will be rollbacked and nothing has been added to the database, please retry.")
-                
-            click.echo(f"All multiqc and metadata results have been saved.")
-            session.commit() # commit (save to db) all rows saved during transaction for given metadata/multic_JSON to database
+        click.echo(f"All multiqc and metadata results have been saved.")
+        session.commit() # commit (save to db) all rows saved during transaction for given metadata/multic_JSON to database
 
 
         # Save batch metadata.
@@ -196,7 +219,7 @@ def cli(directory, sample_metadata, batch_description, cohort_description, batch
             session.commit()
             click.echo(f"Batch descriptions has been saved.")
 
-        # Save Cohort metadata.
+        # Save Cohort metadata
         if cohort_metadata:
             next(cohort_metadata)
             for line in cohort_metadata:

@@ -19,7 +19,7 @@ def create_csv(query_header, query_result, output_dir):
 # Function will find and save all files matching sample_name and return file
 def create_new_multiqc(path_sample_list, output_dir):
     map_path_sample = {} # Dictionary to store path:sample_name key value pairs 
-    config = f'{__file__[:-17]}' + '/multiqc.config' # loading falconqc config file
+    config = os.path.join(os.path.dirname(__file__) , 'multiqc.config') # loading falconqc config file
     if type(path_sample_list) != type([]) and type(path_sample_list[0]) != type(()) and len(path_sample_list[0]) != 2:
         raise Exception("Invalid input: this function only accepts lists containing tuples of the form (sample_name, path)")
 
