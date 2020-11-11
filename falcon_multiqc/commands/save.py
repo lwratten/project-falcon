@@ -29,8 +29,6 @@ Optional Description Arguments:
 def save_sample(directory, sample_metadata, session, cohort_description, batch_description):
     """Saves one result directory and sample_metadatadata to the falcon_multiqc database"""
 
-    # TODO change this to the dirname/basename stuff with os.path
-    # TODO call this function for a directory and sample_name
     directory_name = basename(directory)
     sample_metadata_name = basename(sample_metadata)
     click.echo(f'Saving: {directory_name} with sample metadata: {sample_metadata_name}...')
@@ -86,7 +84,7 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
                         batch_row = Batch(
                             cohort_id=cohort_id,
                             batch_name=batch_name,
-                            path=abspath(directory),
+                            path=directory,
                             description=batch_description
                         )
                         session.add(batch_row)
@@ -178,7 +176,7 @@ def cli(directory, sample_metadata, input_csv, batch_description, cohort_descrip
                                     sys.exit(1)
                                 else:
                                     # save the info in that row
-                                    save_sample(row[0], row[1], session, cohort_description, batch_description)
+                                    save_sample(abspath(row[0]), row[1], session, cohort_description, batch_description)
                     else:
                         click.echo("CSV requires directory and sample_metadata headers.")
                         sys.exit(1)
@@ -192,7 +190,7 @@ def cli(directory, sample_metadata, input_csv, batch_description, cohort_descrip
                 sys.exit(1)
 
             # Default: when a single directory or file is provided
-            save_sample(directory, sample_metadata, session, cohort_description, batch_description)
+            save_sample(abspath(directory), sample_metadata, session, cohort_description, batch_description)
             
                 
         click.echo(f"All multiqc and metadata results have been saved.")
