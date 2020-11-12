@@ -4,11 +4,16 @@ from sqlalchemy.orm import Query
 from .query import print_overview
 from database.models import Base, Batch, Cohort
 
-# Command for removing entries from database.
-# --overview to see all the cohorts with there respective batches and number of samples
-# --cohort option requires one argument 'cohortID' - removes all entries associated with that cohort throughout db
-# --batch option requires two arguments 'cohortID and Batch' - removes all entries associated with that batch throughout db
-# Note: although you can use multiple --batch or --cohort options in one command, if both are used together, only --cohort will commit
+"""
+
+Command for removing entries from database.
+--overview to see all the cohorts with there respective batches and number of samples
+--cohort option requires one argument 'cohortID' - removes all entries associated with that cohort throughout db
+--batch option requires two arguments 'cohortID and Batch' - removes all entries associated with that batch throughout db
+
+Note: although you can use multiple --batch or --cohort options in one command, if both are used together, only --cohort will commit
+
+"""
 
 @click.option("-c", "--cohort", multiple=True, required=False, help="Which cohort to remove from the database. E.g. <MGRB>")
 @click.option ("-b", "--batch", multiple=True, type=(str, str), required=False, help="Which batch you want to remove from the database. E.g. <MGRB BAB>")
