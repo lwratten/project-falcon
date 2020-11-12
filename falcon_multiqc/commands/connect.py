@@ -5,6 +5,7 @@ import os.path
 from getpass import getpass
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import OperationalError
+from .check_db import check_db_paths
 from database.models import get_tables
 
 """
@@ -27,14 +28,9 @@ def create_config(username, password, port, uri, database):
 
 
 @click.command()
-@click.option(
-    "-u",
-    "--uri",
-    type=click.STRING,
-    required=False,
-    help="Enter complete DATABASE_URI (e.g. 'postgres+psycopg2://USERNAME:PASSWORD@IP_ADDRESS:PORT/DATABASE_NAME') - Note, this can create a new db as well",
-)
-def cli(uri):
+@click.option("-u", "--uri", type=click.STRING, required=False, help="Enter complete DATABASE_URI (e.g. 'postgres+psycopg2://USERNAME:PASSWORD@IP_ADDRESS:PORT/DATABASE_NAME') - Note, this can create a new db as well")
+@click.option("-sc", "--skip-check", is_flag=True, required=False, help="Skip checking database paths are valid.")
+def cli(uri, skip_check):
     """Connects the user to a postgres database, creates new database one doesn't exist"""
 
     username, password, port, database = (None, None, None, None)
@@ -86,7 +82,12 @@ def cli(uri):
                     click.echo("\n===\nWarning, selected database is not a falcon_multiqc database, please try again or create a new database\n===")
                     continue
                 create_config(username, password, port, uri, database)  # re-create config file with proper connection URL
+
+                # Check the data in the db we've connected to
+                if not skip_check:
+                    check_db_paths(False)
                 check_db_engine.dispose()
+
             else:
                 """Creates a new database"""
                 click.echo("Creating new database...")
