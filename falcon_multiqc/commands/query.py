@@ -142,6 +142,11 @@ def query_metric(query, join, tool_metric):
             for tool, attribute, operator, value in tool_metric)).group_by(*group_by_columns).
             having(func.count(distinct(RawData.qc_tool)) == len(tool_metric)))
 
+def print_overview(session):
+    for cohort_id, batch_name in session.query(Batch.cohort_id, Batch.batch_name):
+        num_samples = session.query(Sample).join(Batch, Batch.id == Sample.batch_id).\
+        filter(Batch.batch_name == batch_name, Sample.cohort_id == cohort_id).count()
+        click.echo(f"Cohort '{cohort_id}' batch '{batch_name}' has {num_samples} number of samples")
 
 @click.command()
 @click.option(
@@ -382,10 +387,7 @@ def cli(
             click.echo(row)
 
     if overview:
-        for cohort_id, batch_name in session.query(Batch.cohort_id, Batch.batch_name):
-            num_samples = session.query(Sample).join(Batch, Batch.id == Sample.batch_id).\
-            filter(Batch.batch_name == batch_name, Sample.cohort_id == cohort_id).count()
-            click.echo(f"Cohort '{cohort_id}' batch '{batch_name}' has {num_samples} number of samples")
+        print_overview(session)
 
 """
 Query: 

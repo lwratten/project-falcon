@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, Table, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 
 """
 SQLAlchemy defined classes which correspond to database tables.
@@ -18,9 +18,9 @@ class Sample(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
 
-    patient_id = Column(Integer, ForeignKey("patient.id"), nullable=True)
-    batch_id = Column(Integer, ForeignKey("batch.id"), nullable=False)
-    cohort_id = Column(String, ForeignKey("cohort.id"), nullable=False)
+    patient_id = Column(Integer, ForeignKey("patient.id", ondelete="CASCADE"), nullable=True)
+    batch_id = Column(Integer, ForeignKey("batch.id", ondelete="CASCADE"), nullable=False)
+    cohort_id = Column(String, ForeignKey("cohort.id", ondelete="CASCADE"), nullable=False)
     # Non-unique sample ID/name given in input.
     sample_name = Column(String, nullable=False)
     flowcell_lane = Column(String, nullable=False)
@@ -46,7 +46,7 @@ class RawData(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
 
-    sample_id = Column(Integer, ForeignKey('sample.id'), nullable=False)
+    sample_id = Column(Integer, ForeignKey('sample.id', ondelete="CASCADE"), nullable=False)
     qc_tool = Column(String(50), nullable=False)
     metrics = Column(JSONB, nullable=False)
 
@@ -56,8 +56,8 @@ class RawData(Base):
 
 
 PatientBatch = Table("PatientBatch", Base.metadata,
-                     Column("patient_id", Integer, ForeignKey("patient.id")),
-                     Column("batch_id", Integer, ForeignKey("batch.id")),
+                     Column("patient_id", Integer, ForeignKey("patient.id", ondelete="CASCADE")),
+                     Column("batch_id", Integer, ForeignKey("batch.id", ondelete="CASCADE")),
                      )
 
 
@@ -66,7 +66,7 @@ class Patient(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
 
-    cohort_id = Column(String, ForeignKey('cohort.id'), nullable=False)
+    cohort_id = Column(String, ForeignKey('cohort.id', ondelete="CASCADE"), nullable=False)
     age = Column(Integer)
     gender = Column(String(10))
 
@@ -85,16 +85,16 @@ class Batch(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
 
-    cohort_id = Column(String, ForeignKey('cohort.id'), nullable=False)
+    cohort_id = Column(String, ForeignKey('cohort.id', ondelete="CASCADE"), nullable=False)
 
     batch_name = Column(String, nullable=False)
     path = Column(String, nullable=False)
     description = Column(Text)
 
     # Batch-Patients many to many
-    patients = relationship("Patient", secondary=PatientBatch, backref="batch")
+    patients = relationship("Patient", secondary=PatientBatch, backref=backref("batch", cascade = "all, delete"))
     # Sample-Batch many to 1
-    samples = relationship("Sample", backref="batch")
+    samples = relationship("Sample", backref=backref("batch", cascade = "all, delete"))
 
     def __repr__(self):
         return "<Batch(id='{}', batch_name='{}', cohort_id='{}', path='{}', description='{}'>" \
@@ -109,9 +109,9 @@ class Cohort(Base):
     description = Column(Text)
 
     # relationship(batch-cohort, patient-cohort, multiqc-cohort, sample-cohort many to 1)
-    batches = relationship("Batch", backref="cohort")
-    patients = relationship("Patient", backref="cohort")
-    samples = relationship("Sample", backref="cohort")
+    batches = relationship("Batch", backref=backref("cohort", cascade = "all, delete"))
+    patients = relationship("Patient", backref=backref("cohort", cascade = "all, delete"))
+    samples = relationship("Sample", backref=backref("cohort", cascade = "all, delete"))
 
     def __repr__(self):
         return "<Cohort(id='{}', description='{}'>" \
