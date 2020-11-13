@@ -96,10 +96,13 @@ def cli(output, sql, multiqc, csv, overview):
     """SQL query tool: ensure all queries SELECT for sample_name from sample table AND path from batch table"""
 
     if (multiqc or csv) and not output:
-        click.echo("When using multiqc or csv option, please specify a directory to save in using the -o option")
+        click.echo("When using multiqc or csv option, please specify a directory to save in using the -o option.")
         sys.exit(1)
  
     if (output):
+        if output[-4:] != '.txt':
+            click.echo("When using --sql option, please supply path to .txt containing the raw SQL statement like in the examples.")
+            sys.exit(1)
         output = os.path.abspath(output)
 
     click.echo("Processing sql query!") 
@@ -107,19 +110,16 @@ def cli(output, sql, multiqc, csv, overview):
         if sql:
             sql = os.path.abspath(sql)
             with open(sql) as sql_file:
-                # copy raw SQL statement as string
+                # Copy raw SQL statement as string.
                 sql = '\n'.join(sql_file.readlines())
             
             falcon_query = session.execute(sql) # Executes SQL query against database.
             query_header = falcon_query.keys() # Create header from the current query (falcon_query).
-            query_size = falcon_query.rowcount
-            click.echo(f"Query resulted in {query_size} samples.")
+            click.echo(f"Query resulted in {falcon_query.rowcount} samples.")
 
-            if multiqc:
-                sample_path = [col for col in query_header if 'sample_name' in col or 'path' in col]
-                if len(sample_path) ==2:
-                    click.echo("Creating multiqc report...")
-                    create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output)
+            if multiqc and [col for col in query_header if 'sample_name' in col or 'path' in col] == 2:
+                click.echo("Creating multiqc report...")
+                create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output)
 
             if csv:
                 click.echo("Creating csv report...")
