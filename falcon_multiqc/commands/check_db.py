@@ -1,5 +1,7 @@
 import click
-from database.crud import session_scope
+import importlib
+from database import config
+from database import crud
 from sqlalchemy.orm import Query
 from sqlalchemy import update
 from database.models import Base, Batch
@@ -11,7 +13,9 @@ Command for checking paths saved in the database are still valid.
 """
 
 def check_db_paths(skip_update):
-    with session_scope() as session:
+    importlib.reload(config)
+    importlib.reload(crud)
+    with crud.session_scope() as session:
         # Query the paths in the batch table
         paths = session.query(Batch.path)
 
