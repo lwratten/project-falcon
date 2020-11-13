@@ -18,6 +18,7 @@ Options:
 
 --multiqc Use this flag to generate a multiqc report from query, saved in output directory. 
     NOTE: To use, you must make sure to select for 'sample.sample_name' AND 'batch.path'
+          If you give alias via 'AS', please ensure to leave 'sample_name' or 'path' in the alias
     NOTE: To select for 'sample.sample_name' AND 'batch.path' you must join batch table with sample table
     NOTE: see example_3 for using --multiqc flag
 
