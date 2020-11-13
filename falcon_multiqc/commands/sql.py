@@ -18,7 +18,7 @@ Options:
 
 --multiqc Use this flag to generate a multiqc report from query, saved in output directory. 
     NOTE: To use, you must make sure to select for 'sample.sample_name' AND 'batch.path'
-          If you give alias via 'AS', please ensure to leave 'sample_name' or 'path' in the alias
+          Do not specify an alias, just do: SELECT sample.sample_name, batch.path
     NOTE: To select for 'sample.sample_name' AND 'batch.path' you must join batch table with sample table
     NOTE: see example_3 for using --multiqc flag
 
@@ -75,8 +75,8 @@ falcon_multiqc sql --sql sql3.txt --multiqc
 
 Where sql2.txt contains (needs to select for both sample.sample_name AND batch.path): 
 
-    SELECT sample.sample_name AS sample_sample_name,
-    batch.path AS batch_path,
+    SELECT sample.sample_name,
+    batch.path,
     max(raw_data.metrics ->> 'AVG_DP') AS AVG_DP, 
     max(raw_data.metrics ->> 'MEAN_INSERT_SIZE') AS MEAN_INSERT_SIZE 
     FROM sample JOIN batch ON sample.batch_id = batch.id JOIN raw_data ON sample.id = raw_data.sample_id 
@@ -118,12 +118,8 @@ def cli(output, sql, multiqc, csv, overview):
             if multiqc:
                 sample_path = [col for col in query_header if 'sample_name' in col or 'path' in col]
                 if len(sample_path) ==2:
-                    sample_name = [col for col in sample_path if 'sample_name' in col][0] # get the column same for sample.sample_name the user specified 
-                    path = [col for col in sample_path if 'path' in col][0] # get the column same for batch.path the user specified 
-                    mapper = defaultdict(list)
-                    [mapper[key].append(value) for row in falcon_query for key, value in row.items() if 'sample_name' in key or 'path' in key]
                     click.echo("Creating multiqc report...")
-                    create_new_multiqc([(mapper[sample_name][i], mapper[path][i]) for i in range(query_size)], output)
+                    create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output)
 
             if csv:
                 click.echo("Creating csv report...")
