@@ -81,12 +81,12 @@ Where sql2.txt contains (needs to select for both sample.sample_name AND batch.p
     FROM sample JOIN batch ON sample.batch_id = batch.id JOIN raw_data ON sample.id = raw_data.sample_id 
     WHERE (raw_data.qc_tool='verifybamid' AND CAST((raw_data.metrics ->> 'AVG_DP') AS FLOAT) < 28) 
     OR (raw_data.qc_tool='picard_insertSize' AND CAST((raw_data.metrics ->> 'MEAN_INSERT_SIZE') AS FLOAT) > 490) 
-    GROUP BY sample.id,  HAVING count(distinct raw_data.qc_tool) = 2
+    GROUP BY sample.id, batch.path HAVING count(distinct raw_data.qc_tool) = 2
 
 """
 
 @click.command()
-@click.option("-s", "--sql", type=click.Path(exists=True), required=True, help="Path to txt containing correct raw SQL") 
+@click.option("-s", "--sql", type=click.Path(exists=True), required=False, help="Path to txt containing correct raw SQL") 
 @click.option("-o", "--output", type=click.STRING, required=False, help="where query result will be saved")
 @click.option("--multiqc", is_flag=True, required=False, help="Create a multiqc report.")
 @click.option("--csv", is_flag=True, required=False, help="Create a csv report.")
@@ -102,35 +102,36 @@ def cli(output, sql, multiqc, csv, overview):
         output = os.path.abspath(output)
 
     click.echo("Processing sql query!") 
-
-    sql = os.path.abspath(sql)
-    with open(sql) as sql_file:
-        sql = '\n'.join(sql_file.readlines())
-
     with session_scope() as session:
-        falcon_query = session.execute(sql) # Executes SQL query against database.
-        query_header = falcon_query.keys() # Create header from the current query (falcon_query).
-        query_size = falcon_query.rowcount
-        click.echo(f"Query resulted in {query_size} samples.")
+        if sql:
+            sql = os.path.abspath(sql)
+            with open(sql) as sql_file:
+                # copy raw SQL statement as string
+                sql = '\n'.join(sql_file.readlines())
+            
+            falcon_query = session.execute(sql) # Executes SQL query against database.
+            query_header = falcon_query.keys() # Create header from the current query (falcon_query).
+            query_size = falcon_query.rowcount
+            click.echo(f"Query resulted in {query_size} samples.")
 
-        if multiqc:
-            sample_path = [col for col in query_header if 'sample_name' in col or 'path' in col]
-            if len(sample_path) ==2:
-                sample_name = [col for col in sample_path if 'sample_name' in col][0] # get the column same for sample.sample_name the user specified 
-                path = [col for col in sample_path if 'path' in col][0] # get the column same for batch.path the user specified 
-                mapper = defaultdict(list)
-                [mapper[key].append(value) for row in falcon_query for key, value in row.items() if 'sample_name' in key or 'path' in key]
-                click.echo("Creating multiqc report...")
-                create_new_multiqc([(mapper[sample_name][i], mapper[path][i]) for i in range(query_size)], output)
+            if multiqc:
+                sample_path = [col for col in query_header if 'sample_name' in col or 'path' in col]
+                if len(sample_path) ==2:
+                    sample_name = [col for col in sample_path if 'sample_name' in col][0] # get the column same for sample.sample_name the user specified 
+                    path = [col for col in sample_path if 'path' in col][0] # get the column same for batch.path the user specified 
+                    mapper = defaultdict(list)
+                    [mapper[key].append(value) for row in falcon_query for key, value in row.items() if 'sample_name' in key or 'path' in key]
+                    click.echo("Creating multiqc report...")
+                    create_new_multiqc([(mapper[sample_name][i], mapper[path][i]) for i in range(query_size)], output)
 
-        if csv:
-            click.echo("Creating csv report...")
-            create_csv(query_header, falcon_query, output)
+            if csv:
+                click.echo("Creating csv report...")
+                create_csv(query_header, falcon_query, output)
 
-        if not multiqc and not csv and not overview:
-            # Print result.
-            click.echo(query_header)
-            [click.echo(row) for row in falcon_query]            
+            if not multiqc and not csv and not overview:
+                # Print result.
+                click.echo(query_header)
+                [click.echo(row) for row in falcon_query]            
 
         if overview:
             print_overview(session)
