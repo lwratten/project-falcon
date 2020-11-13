@@ -1,7 +1,6 @@
 import click
 import sys
 import os
-from collections import defaultdict 
 from database.crud import session_scope
 from database.process_query import create_new_multiqc, create_csv
 from .query import print_overview
@@ -117,9 +116,13 @@ def cli(output, sql, multiqc, csv, overview):
             query_header = falcon_query.keys() # Create header from the current query (falcon_query).
             click.echo(f"Query resulted in {falcon_query.rowcount} samples.")
 
-            if multiqc and [col for col in query_header if 'sample_name' in col or 'path' in col] == 2:
-                click.echo("Creating multiqc report...")
-                create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output)
+            if multiqc:
+                if [col for col in query_header if 'sample_name' in col or 'path' in col] == 2:
+                    click.echo("Creating multiqc report...")
+                    create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output)
+                else:
+                    click.echo("When using --multiqc option, please select for sample.sample_name AND batch.path (see example_3).")
+                    sys.exit(1)
 
             if csv:
                 click.echo("Creating csv report...")
