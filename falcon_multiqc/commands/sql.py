@@ -117,7 +117,7 @@ def cli(output, sql, multiqc, csv, overview):
             click.echo(f"Query resulted in {falcon_query.rowcount} samples.")
 
             if multiqc:
-                if [col for col in query_header if 'sample_name' in col or 'path' in col] == 2:
+                if len([col for col in query_header if 'sample_name' in col or 'path' in col]) == 2:
                     click.echo("Creating multiqc report...")
                     create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output)
                 else:
