@@ -33,7 +33,7 @@ NOTE: if --multiqc or --csv flags are not used, result will print to stdout
 Example_1: 
 falcon_multiqc sql --sql sql.txt 
 
-Where sql.txt contains:
+Where sql.txt contains the following:
 
     SELECT s.sample_name, rd.qc_tool, s.cohort_id, b.batch_name FROM public.raw_data as rd 
     join sample as s on (s.id = rd.sample_id)
@@ -58,7 +58,7 @@ Where sql.txt contains:
 Example_2:
 falcon_multiqc sql --sql sql2.txt 
 
-Where sql2.txt contains: 
+Where sql2.txt contains the following:
 
     SELECT sample.id AS sample_id, 
     sample.sample_name AS sample_sample_name,
@@ -70,10 +70,10 @@ Where sql2.txt contains:
     GROUP BY sample.id, batch.path HAVING count(distinct raw_data.qc_tool) = 2
 
 
-Example_3:
+Example_3 --multiqc flag (needs to select for both sample.sample_name AND batch.path):
 falcon_multiqc sql --sql sql3.txt --multiqc 
 
-Where sql2.txt contains (needs to select for both sample.sample_name AND batch.path): 
+Where sql2.txt contains the following: 
 
     SELECT sample.sample_name,
     batch.path,
