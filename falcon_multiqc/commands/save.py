@@ -41,7 +41,8 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
 
             # Keep track of samples added, so we know its primary key, when saving raw data later.
             samples = {}  # name : primary key id
-            batches = [] # batches within given metadata 
+            batches = {} # batches within given metadata 
+            types = {} # stores number of types in a given cohort 
 
             # Cohort id for this input. Cohort id must be the same for every batch of this input.
             cohort_id = None
@@ -72,13 +73,15 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
                             description=cohort_description
                         )
                         session.add(cohort_row)
+                    batches[cohort_id] = [] 
+                    types[cohort_id] = []
                 elif split[1].strip(stripChars) != cohort_id:
                     raise Exception(f"Metadata input has multiple cohort ids ({cohort_id} and {split[1]}). Save supports one cohort at a time.")
                 
                 batch_id = None
-                if batch_name not in batches:
+                if batch_name not in batches[cohort_id]:
                     # First time this batch_name is seen from this given metadata.csv
-                    batches.append(batch_name) 
+                    batches[cohort_id].append(batch_name) 
                     if session.query(Batch.id).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).scalar() is None:
                         # Batch does not exist in database.
                         batch_row = Batch(
@@ -116,21 +119,57 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
                 session.add(sample_row)
                 session.flush()
                 samples[sample_name] = sample_row.id
+                if type not in types[cohort_id]:
+                    types[cohort_id].append(type)
+
+            # Enter sample counts for batch/cohort.
+            for cohort_id in batches:
+                cohort_count = 0
+                for batch_name in batches[cohort_id]:
+                    # Count number of samples in given batch.
+                    batch_count = session.query(Sample).join(Batch, Batch.id == Sample.batch_id).\
+                    filter(Batch.batch_name == batch_name, Sample.cohort_id == cohort_id).count()
+                    # Update Batch count column.
+                    session.query(Batch).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).one().sample_count = batch_count
+                    cohort_count += batch_count
+                    print(f'copunt was {batch_count}')
+                session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count = cohort_count
+                print(f'cohort_count was {cohort_count}')
+                
+            # Update cohort tables with types if needed
+            for cohort_id in types:
+                old_type_list = session.query(Cohort).filter(Cohort.id == cohort_id).one().type
+                if old_type_list == None:
+                    session.query(Cohort).filter(Cohort.id == cohort_id).one().type = ','.join(types[cohort_id])
+                    continue
+                # Update cohort with new type info.
+                new_type_list = []
+                for type in types[cohort_id]:
+                    if type not in old_type_list:
+                        new_type_list.append(type)
+                new_type_list = ','.join(new_type_list)
+                new_type_list = new_type_list + old_type_list
+                session.query(Cohort).filter(Cohort.id == cohort_id).one().type = new_type_list
 
             multiqc_data_json = json.load(multiqc_data)
 
             for tool in multiqc_data_json["report_saved_raw_data"]:
-                if tool == "multiqc_picard_varientCalling":
-                    tool = "multiqc_picard_variantCalling" # Correct historical typo from multiqc JSON.
                 for sample in multiqc_data_json["report_saved_raw_data"][tool]:
                     sample_name = sample.split("_")[0].strip(stripChars)
-                    
                     try:
-                        raw_data_row = RawData(
-                            sample_id=samples[sample_name],
-                            qc_tool=tool[8:],
-                            metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
-                        )
+                        if tool == "multiqc_picard_varientCalling":
+                            tool2 = "multiqc_picard_variantCalling" # Correct historical typo from multiqc JSON.
+                            raw_data_row = RawData(
+                                sample_id=samples[sample_name],
+                                qc_tool=tool2[8:],
+                                metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
+                            )
+                        else:
+                            raw_data_row = RawData(
+                                sample_id=samples[sample_name],
+                                qc_tool=tool[8:],
+                                metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
+                            )
                         session.add(raw_data_row)
                     except KeyError:
                         raise Exception(f"Metadata file {sample_metadata_name} does not match with multiqc folder {directory} data JSON file"
