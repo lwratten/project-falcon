@@ -25,7 +25,11 @@ def session_scope():
     finally:
         session.close()
 
+# Create a new database
+def create_database():
+    Base.metadata.create_all(engine)
+
 # Recreate the database tables.
 def recreate_database():
     Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
+    create_database()
