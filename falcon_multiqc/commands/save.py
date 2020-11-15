@@ -132,9 +132,7 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
                     # Update Batch count column.
                     session.query(Batch).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).one().sample_count = batch_count
                     cohort_count += batch_count
-                    print(f'copunt was {batch_count}')
                 session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count = cohort_count
-                print(f'cohort_count was {cohort_count}')
                 
             # Update cohort tables with types if needed
             for cohort_id in types:
