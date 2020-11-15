@@ -8,7 +8,7 @@ from database.crud import session_scope
 from database.models import Base, Sample, Batch, Cohort, RawData
 from sqlalchemy import Float, or_, and_, func, distinct
 from sqlalchemy.orm import load_only, Load, Query
-from database.process_query import create_new_multiqc, create_csv
+from database.process_query import create_new_multiqc, create_csv, print_csv
 
 """
 This command allows you to query the falcon multiqc database.
@@ -264,7 +264,7 @@ def print_overview(session):
 @click.option(
     "-o",
     "--output",
-    type=click.Path(),
+    type=click.Path(exists=True),
     required=False,
     help="Output directory where query result will be saved.")    
 
@@ -380,11 +380,9 @@ def cli(
         click.echo("Creating csv report...")
         create_csv(query_header, falcon_query, output)
 
-    if not multiqc and not csv and not overview:
+    if not csv and not overview:
         # Print result.
-        click.echo(query_header)
-        for row in falcon_query:
-            click.echo(row)
+        print_csv(query_header, falcon_query)
 
     if overview:
         print_overview(session)
