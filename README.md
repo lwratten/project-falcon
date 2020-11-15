@@ -77,7 +77,7 @@ This command allows you to visualise the output of the `query` command. The outp
 
 - `--output` specifies where to save the output (include filename).
 - `--type` [histogram / box / bar] type of chart.
-- `--compare` x-axis of box and bar, overlapped group on histogram. **Required for bar**.
+- `--compare` x-axis of box and bar, overlapped group on histogram. **Required for bar**. Must be a column header of the query output e.g. `raw_data.PCT_EXC_DUPE` or `batch.description`
 - ##### Histogram (use for metrics summary [vs groups])
   - `--compare` column that will be plotted overlapping on the same histogram [Optional].
   - Supports 1 metric only. If multiple present, will only use the first.

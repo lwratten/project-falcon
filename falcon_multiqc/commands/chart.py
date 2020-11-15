@@ -98,9 +98,11 @@ def cli(data, output, type, compare):
         col = getCol(i)
         fig.add_trace(go.Box(x=(input_df[compare] if compare else None), y=input_df[metrics[i]]),
                       row=row, col=col)
-        fig.update_xaxes(title_text=compare, row=row, col=col)
+        if (compare):
+          fig.update_xaxes(title_text=compare, row=row, col=col)
+
         fig.update_yaxes(title_text=metrics[i], row=row, col=col)
 
-      if (not compare): fig.update_layout(showlegend=False)
+      fig.update_layout(showlegend=False)
 
   fig.write_html(output)
