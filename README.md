@@ -58,7 +58,22 @@ This command allows you to query the falcon multiqc database.
 - Specify output directory with `--output or -o`. 
 - Specify output type with either `--csv` or `--multiqc`.
    - Default output is stdout.
+   
+### Connect command
+This command connects the user to a postgres database and creates a new database if one doesn't exist.
 
+- Use `falcon_multiqc connect --help` to see how to use the connect command.
+- E.g. `falcon_multiqc connect` will prompt you to enter your username and password and connect to the database.
+- Optional Parameters:
+  - `--uri` <Database URI> -- Enter a URI to connect to the database with (URI in the form 'postgres+psycopg2://USERNAME:PASSWORD@IP_ADDRESS:PORT/DATABASE_NAME').
+  - `--skip-check` -- Skip checking file paths in the database when connecting to an existing database
+   
+### Check Database command
+This command allows you to checks the paths in your database are still valid and and fix invalid paths.
+
+- Use `falcon_multiqc check_db --help` to see how to use the check database command.
+- E.g. `falcon_multiqc check_db`
+- Optional parameter `--skip-update` skips prompts for invalid paths while checking the database.
 
 ## Dev instructions
 1. `git clone https://github.com/lwratten/project-falcon.git`

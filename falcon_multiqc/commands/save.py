@@ -120,6 +120,8 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
             multiqc_data_json = json.load(multiqc_data)
 
             for tool in multiqc_data_json["report_saved_raw_data"]:
+                if tool == "multiqc_picard_varientCalling":
+                    tool = "multiqc_picard_variantCalling" # Correct historical typo from multiqc JSON.
                 for sample in multiqc_data_json["report_saved_raw_data"][tool]:
                     sample_name = sample.split("_")[0].strip(stripChars)
                     
