@@ -6,6 +6,30 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
 
+"""
+This command allows you to visualise the output of the `query` command. 
+The output will be a html file (path and name specified by `--output`), 
+with each value hoverable for extra details. 
+
+- Input should be a csv from `query` command: supports stdin or `--data path/to/query_output.csv`
+- `--output` specifies where to save the output (include filename).
+- `--type` [histogram / box / bar] type of chart.
+- `--compare` x-axis of box and bar, overlapped group on histogram. **Required for bar**. Must be a column header of the query output e.g. `raw_data.PCT_EXC_DUPE` or `batch.description`
+
+Types:
+- Histogram (use for metrics summary [vs groups])
+  - `--compare` column that will be plotted overlapping on the same histogram [Optional].
+  - Supports 1 metric only. If multiple present, will only use the first.
+  
+- Bar (use for metrics vs categorical data)
+  - `--compare` column that will be plotted on the x-axis **categorically** (not numerically) [Required].
+  - Supports multiple metrics (will be plotted as separate graphs).
+
+- Box (use for metrics [vs groups])
+  - `--compare` column that will be plotted on the x-axis [Optional].
+  - Supports multiple metrics (will be plotted as separate graphs).
+"""
+
 SUBPLOT_ROWS = 2
 SUBPLOT_COLS = 2
 

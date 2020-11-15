@@ -264,9 +264,9 @@ def print_overview(session):
 @click.option(
     "-o",
     "--output",
-    type=click.Path(exists=True),
+    type=click.Path(),
     required=False,
-    help="Output directory where query result will be saved.")    
+    help="Output path where query result will be saved (including filename).")    
 
 def cli(
     select,
@@ -296,8 +296,11 @@ def cli(
 
     # Sqlaclehmy query that will be constructed based on this command's options.
     falcon_query = None
+
     if (output):
         output = os.path.abspath(output)
+        if (not os.path.exists(os.path.dirname(output))):
+            raise Exception(f"Output path {os.path.dirname(output)} does not exist.")
 
     ### ================================= SELECT  ==========================================####
     # Both select and filter options influence whether certain tables need to be joined, the following handles this.
