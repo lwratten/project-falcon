@@ -307,12 +307,12 @@ def cli(
     # Check output and filename for validity.
     if (output):
         output = os.path.abspath(output)
-        if (not os.path.exists(os.path.dirname(output))):
-            raise Exception(f"Output path {os.path.dirname(output)} does not exist.")
         if (not os.path.isdir(output)):
-            raise Exception(f"Output path {os.path.dirname(output)} is NOT a directory. Please use a directory path with --output.")
+            raise Exception(f"Output path {output} is NOT a directory. Please use a directory path with --output.")
+        if (not os.path.exists(output)):
+            raise Exception(f"Output path {os.path.dirname(output)} does not exist.")        
         if not filename:
-            raise Exception("--output requires --filename to name the csv or multiqc report")
+            raise Exception("--output requires --filename (no extension) to name the csv or multiqc report")
 
     ### ================================= SELECT  ==========================================####
     # Both select and filter options influence whether certain tables need to be joined, the following handles this.
