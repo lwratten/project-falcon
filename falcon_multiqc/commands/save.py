@@ -125,8 +125,11 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
             # Enter sample counts for batch/cohort.
             for cohort_id in batches:
                 cohort_count = session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count
+                batch_count = session.query(Cohort).filter(Cohort.id == cohort_id).one().batch_count
                 if cohort_count == None:
                     cohort_count = 0
+                if batch_count == None:
+                    batch_count = 0
                 for batch_name in batches[cohort_id]:
                     # Count number of samples in given batch.
                     batch_count = session.query(Sample).join(Batch, Batch.id == Sample.batch_id).\
@@ -134,7 +137,9 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
                     # Update Batch count column.
                     session.query(Batch).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).one().sample_count = batch_count
                     cohort_count += batch_count
+                batch_count = batch_count + len(batches[cohort_id]) # Update the batch count. 
                 session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count = cohort_count
+                session.query(Cohort).filter(Cohort.id == cohort_id).one().batch_count = batch_count
                 
             # Update cohort tables with types if needed
             for cohort_id in types:

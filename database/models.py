@@ -108,6 +108,7 @@ class Cohort(Base):
     id = Column(String, primary_key=True, nullable=False)
 
     sample_count = Column(Integer)
+    batch_count = Column(Integer)
     type = Column(Text)
     description = Column(Text)
 
