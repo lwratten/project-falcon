@@ -8,7 +8,7 @@ from database.crud import session_scope
 from database.models import Base, Sample, Batch, Cohort, RawData
 from sqlalchemy import Float, or_, and_, func, distinct
 from sqlalchemy.orm import load_only, Load, Query
-from database.process_query import create_new_multiqc, create_csv
+from database.process_query import create_new_multiqc, create_csv, print_csv
 
 """
 This command allows you to query the falcon multiqc database.
@@ -266,7 +266,13 @@ def print_overview(session):
     "--output",
     type=click.Path(),
     required=False,
-    help="Output directory where query result will be saved.")    
+    help="Output directory where query result will be saved (required when --csv or --multiqc).")    
+
+@click.option(
+    "-f",
+    "--filename",
+    required=False,
+    help="Output filename (required when --csv or --multiqc).")    
 
 def cli(
     select,
@@ -285,7 +291,8 @@ def cli(
     multiqc,
     csv,
     overview,
-    output):
+    output,
+    filename):
 
     """Query the falcon qc database by specifying what you would like to select on by using the --select option, and
     what to filter on (--tool_metric, --batch, or --cohort)."""
@@ -296,8 +303,16 @@ def cli(
 
     # Sqlaclehmy query that will be constructed based on this command's options.
     falcon_query = None
+    
+    # Check output and filename for validity.
     if (output):
         output = os.path.abspath(output)
+        if (not os.path.isdir(output)):
+            raise Exception(f"Output path {output} is NOT a directory. Please use a directory path with --output.")
+        if (not os.path.exists(output)):
+            raise Exception(f"Output path {os.path.dirname(output)} does not exist.")        
+        if not filename:
+            raise Exception("--output requires --filename (no extension) to name the csv or multiqc report")
 
     ### ================================= SELECT  ==========================================####
     # Both select and filter options influence whether certain tables need to be joined, the following handles this.
@@ -374,17 +389,15 @@ def cli(
 
     if multiqc:
         click.echo("Creating multiqc report...")
-        create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output)
+        create_new_multiqc([(row.sample_name, row.path) for row in falcon_query], output, filename)
 
     if csv:
         click.echo("Creating csv report...")
-        create_csv(query_header, falcon_query, output)
+        create_csv(query_header, falcon_query, output, filename)
 
-    if not multiqc and not csv and not overview:
+    if not csv and not overview:
         # Print result.
-        click.echo(query_header)
-        for row in falcon_query:
-            click.echo(row)
+        print_csv(query_header, falcon_query)
 
     if overview:
         print_overview(session)
