@@ -96,25 +96,26 @@ This command allows you to query the falcon multiqc database using raw SQL.
 NOTE: example_1, example_2, example_3 can be found in the sql.py doc string.
 Options:
 
--s --sql <path.txt> Enter path (relative or absolute) to .txt containing raw SQL statement
+- `--sql <path.txt>` Enter path (relative or absolute) to .txt containing raw SQL statement
     See example_1, example_2, example_3 for examples
 
--o --output <path> Specify the directory to save either your csv or multiqc result when using the --csv or --multiqc options
+- `--output <path>` Specify the directory to save either your csv or multiqc result when using the `--csv` or `--multiqc` options
 
--f --filename <filename> Name (no extensions) the csv or multiqc html report when using the --csv or --multiqc options
+- `--filename <filename>` Name (no extensions) the csv or multiqc html report when using the `--csv` or `--multiqc` options
 
--c --csv Creates csv file in output directory from query result 
+- `--csv` Creates csv file in output directory from query result 
     See example_2
 
--m --multiqc Use this flag to generate a multiqc report from query, saved in output directory. 
+- `--multiqc` Use this flag to generate a multiqc report from query, saved in output directory. 
     See example_3
     NOTE: To use, you must make sure to select for 'sample.sample_name' AND 'batch.path'
           Do not specify an alias, just do: SELECT sample.sample_name, batch.path
     NOTE: To select for 'sample.sample_name' AND 'batch.path' you must join batch table with sample table
 
---overview Prints an overview of the number of samples in each batch/cohort.
+- `--overview` Prints an overview of the number of samples in each batch/cohort.
 
-NOTE: If --multiqc or --csv flags are not used, result will print to stdout.
+NOTE: If `--multiqc` or `--csv` flags are not used, result will print to stdout.
+    See example_1
 
 #### 6. Check Database
 This command allows you to checks the paths in your database are still valid and and fix invalid paths.
@@ -126,9 +127,9 @@ This command allows you to checks the paths in your database are still valid and
 #### 7. Remove
 Command for removing entries from database.
 
---overview Prints an overview of the number of samples in each batch/cohort.
---cohort <cohortID> - removes all entries associated with that cohort throughout database.
---batch <cohortID Batch_name> - removes all entries associated with that batch throughout database.
+`--overview` Prints an overview of the number of samples in each batch/cohort.
+`--cohort <cohortID>` - removes all entries associated with that cohort throughout database.
+`--batch <cohortID Batch_name>` - removes all entries associated with that batch throughout database.
 
 NOTE: although you can use multiple --batch or --cohort options in one command, if both are used together, only --cohort will commit.
 
