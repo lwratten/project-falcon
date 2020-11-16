@@ -6,7 +6,7 @@ import os.path
 
 from database.crud import session_scope
 from database.models import Base, Sample, Batch, Cohort, RawData
-from sqlalchemy import Float, or_, and_, func, distinct
+from sqlalchemy import Float, Text, or_, and_, func, distinct
 from sqlalchemy.orm import load_only, Load, Query
 from database.process_query import create_new_multiqc, create_csv
 
@@ -113,8 +113,18 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
 
     return query
 
-# TODO: Currently only supports metrics that are float values. Support more.
-# Returns a sqlalchemy query that queries the database with a filter
+# Takes in a tool metric value and determines if we need to cast
+# our db column as a Float or Text
+def cast_type(value):
+    result = Float
+    try:
+        float(value)
+    except ValueError:
+        result = Text  
+    return result
+
+
+# Returns an sqlalchemy query that queries the database with a filter
 # with the given tool, attribute, operator and value.
 def query_metric(query, join, tool_metric):
     group_by_columns = []
@@ -138,9 +148,10 @@ def query_metric(query, join, tool_metric):
             return (query.filter(or_(RawData.qc_tool == tool for tool, attribute, operator, value in tool_metric))
             .group_by(*group_by_columns).having(func.count(RawData.qc_tool) == len(tool_metric)))
 
-    return (query.filter(or_(and_(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value)) 
-            for tool, attribute, operator, value in tool_metric)).group_by(*group_by_columns).
-            having(func.count(distinct(RawData.qc_tool)) == len(tool_metric)))
+    # Loop through each tool_metric joining each result on OR that matches the tool name and meets the value condition.
+    return (query.filter(or_(and_(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(cast_type(value)), value)) 
+        for tool, attribute, operator, value in tool_metric)).group_by(*group_by_columns).
+        having(func.count(distinct(RawData.qc_tool)) == len(tool_metric)))
 
 def print_overview(session):
     for cohort_id, batch_name in session.query(Batch.cohort_id, Batch.batch_name):
@@ -164,7 +175,7 @@ def print_overview(session):
     multiple=True, 
     type=(str, str, str, str), 
     required=False, 
-    help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP < 30'.")
+    help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP '<' 30'.")
 
 @click.option(
     "-b",
