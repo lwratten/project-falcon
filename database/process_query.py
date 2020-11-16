@@ -6,8 +6,8 @@ import click
 import sys
 
 # Creates new csv with the sqlalchemy query result in the given output directory.
-def create_csv(query_header, query_result, output_path):
-    with open(output_path, 'w') as csv_file:
+def create_csv(query_header, query_result, output_path, filename):
+    with open(f"{output_path}/{filename}.csv", 'w') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter = ',')
 
         csv_writer.writerow(query_header)
@@ -24,11 +24,10 @@ def print_csv(query_header, query_result):
 
 # Requires list containing tuples in the form (sample_name, path), and requires user specified output directory path 
 # Function will find and save all files matching sample_name and return file
-def create_new_multiqc(path_sample_list, output_path):
+def create_new_multiqc(path_sample_list, output_dir, filename):
     map_path_sample = {} # Dictionary to store path:sample_name key value pairs 
     config = os.path.join(os.path.dirname(__file__) , 'multiqc.config') # loading falconqc config file
-    output_dir = os.path.dirname(output_path)
-    output_name = os.path.basename(output_path) + "_multiqc_report"
+    output_name = filename + "_multiqc_report"
 
     if type(path_sample_list) != type([]) and type(path_sample_list[0]) != type(()) and len(path_sample_list[0]) != 2:
         raise Exception("Invalid input: this function only accepts lists containing tuples of the form (sample_name, path)")

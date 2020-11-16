@@ -152,6 +152,11 @@ stripChars = " \n\r\t\'\""
 def cli(directory, sample_metadata, input_csv, batch_description, cohort_description, batch_metadata, cohort_metadata):
     """Saves the given cohort directory to the falcon_multiqc database"""
 
+    if not directory and not input_csv:
+        raise Exception("Save requires either an input --directory OR --input_csv.")
+    if directory and input_csv:
+       raise Exception("Save requires only one of input --directory OR --input_csv, not both.")
+
     with session_scope() as session:
 
         # Did we get a csv?
