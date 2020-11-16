@@ -66,7 +66,8 @@ This command allows you to query the falcon multiqc database.
 
     - Special characters must be escaped (wrapped in single quotes) in bash, like '<'.
 
-- Specify output path (including filename) with `--output or -o`. 
+- Specify output path with `--output or -o`. 
+- Specify output filename with `--filename` or `-f` (required if using output/csv/multiqc).
 - Specify output type with either `--csv` or `--multiqc`.
    - Default output is stdout.
 
