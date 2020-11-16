@@ -8,30 +8,27 @@ from .query import print_overview
 """
 This command allows you to query the falcon multiqc database using raw SQL.
 
-See example 1, 2, 3 bellow for example commands 
-
 Options:
+
+-s --sql <path.txt> Enter path (relative or absolute) to .txt containing raw SQL statement
+    See example_1, example_2, example_3 for examples
 
 -o --output <path> Specify the directory to save either your csv or multiqc result when using the --csv or --multiqc options
 
--f --filename <filename> name (no extensions) the csv or multiqc html report when using the --csv or --multiqc options
+-f --filename <filename> Name (no extensions) the csv or multiqc html report when using the --csv or --multiqc options
 
--s --sql <path.extension> Enter path to .txt containing correct raw SQL statement
-    See example_1, example_2, example_3 for example SQL queries
+-c --csv Creates csv file in output directory from query result 
+    See example_2
 
 -m --multiqc Use this flag to generate a multiqc report from query, saved in output directory. 
+    See example_3
     NOTE: To use, you must make sure to select for 'sample.sample_name' AND 'batch.path'
           Do not specify an alias, just do: SELECT sample.sample_name, batch.path
     NOTE: To select for 'sample.sample_name' AND 'batch.path' you must join batch table with sample table
-    NOTE: see example_3 for using --multiqc flag
-
--c --csv Creates csv file in output directory from query result 
-    Example: falcon_multiqc sql --sql sql3.txt --csv
 
 --overview Prints an overview of the number of samples in each batch/cohort.
 
-NOTE: if --multiqc or --csv flags are not used, result will print to stdout
-
+NOTE: If --multiqc or --csv flags are not used, result will print to stdout.
 
 Example_1 (Stdout): 
 `falcon_multiqc sql --sql sql.txt`

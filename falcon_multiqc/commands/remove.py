@@ -5,13 +5,15 @@ from .query import print_overview
 from database.models import Base, Batch, Cohort
 
 """
-
 Command for removing entries from database.
---overview to see all the cohorts with there respective batches and number of samples
---cohort option requires one argument 'cohortID' - removes all entries associated with that cohort throughout db
---batch option requires two arguments 'cohortID and Batch' - removes all entries associated with that batch throughout db
 
-Note: although you can use multiple --batch or --cohort options in one command, if both are used together, only --cohort will commit
+--overview Prints an overview of the number of samples in each batch/cohort.
+
+--cohort <cohortID> - removes all entries associated with that cohort throughout database.
+
+--batch <cohortID Batch_name> - removes all entries associated with that batch throughout database.
+
+NOTE: although you can use multiple --batch or --cohort options in one command, if both are used together, only --cohort will commit.
 
 """
 
