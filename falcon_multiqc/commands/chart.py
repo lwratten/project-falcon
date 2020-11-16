@@ -1,4 +1,5 @@
 import sys
+import os
 import click
 import math
 import plotly.express as px
@@ -48,10 +49,11 @@ def getCol(i):
 
 @click.command()
 @click.option("-d", "--data", type=click.File(), help="Input CSV data to chart.")
-@click.option("-o", "--output", type=click.Path(), required=True, help="Path where output should be saved (including file name).")
+@click.option("-o", "--output", type=click.Path(), required=True, help="Path where output should be saved.")
+@click.option("-f", "--filename", required=True, help="Name of the file output.")
 @click.option("-t", "--type", type=click.Choice(["histogram", "box", "bar"], case_sensitive=False), required=True, help="Type of chart.")
 @click.option("-c", "--compare", required=False, help="What column you want to compare or group by")
-def cli(data, output, type, compare):
+def cli(data, output, filename, type, compare):
   """Chart data from the query command. Requires csv input (--data or stdin)."""
   if data:
     input_df = pd.read_csv(data)
@@ -59,6 +61,14 @@ def cli(data, output, type, compare):
     data = click.get_text_stream('stdin').value()
   else:
     raise Exception("Chart requires csv data input via --data or stdin.")  
+
+  # Check output and filename for validity.
+  if (output):
+      output = os.path.abspath(output)
+      if (not os.path.isdir(output)):
+          raise Exception(f"Output path {output} is NOT a directory. Please use a directory path with --output.")
+      if (not os.path.exists(output)):
+          raise Exception(f"Output path {output} does not exist.")
 
   click.echo("First 5 lines of your input...")
   click.echo(input_df.head(5))
@@ -129,4 +139,4 @@ def cli(data, output, type, compare):
 
       fig.update_layout(showlegend=False)
 
-  fig.write_html(output)
+  fig.write_html(f"{output}/{filename}.html")
