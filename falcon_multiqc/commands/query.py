@@ -50,7 +50,7 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
         if col == 'sample':
             select_cols.extend([Sample.id, Sample.sample_name, Sample.flowcell_lane, Sample.library_id, Sample.platform, Sample.centre, Sample.reference_genome, Sample.description])
         if col == 'cohort':
-            select_cols.extend([Cohort.id, Cohort.description, Cohort.sample_count])
+            select_cols.extend([Cohort.id, Cohort.description, Cohort.sample_count, Cohort.batch_count])
         if col == 'batch':
             select_cols.extend([Batch.batch_name, Batch.description, Batch.sample_count])
         if col == 'tool-metric':
