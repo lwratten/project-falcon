@@ -1,12 +1,24 @@
 # falcon-multiqc
 A tool for parsing multiqc reports into a database with querying and charting capabilities from the command-line
 
-## User instructions
-- The below dev instructions + `falcon_multiqc` command.
-- Use `falcon_multiqc --help` to see all available commands
+## User Setup
+1. git clone https://github.com/lwratten/project-falcon.git
+2. cd project-falcon
+3. Ensure your system has the tools in requirements.system installed.
+4. python3 -m venv env create a python virtual environment if you haven't already
+5. source env/bin/activate go into the virtual environment
+6. pip install . or pip install --editable . if developing
+
+## System Requirements
+Falcon MultiQC supports Linux based operating systems with the system requirements required to install the tool (as described in requirements.system).
+
+## Database Server Setup
+Falcon MultiQC requires a PostgreSQL database server to have already been set up. Keep note of your server’s username, password and port. This information is required when connecting FalconMultiQC to your server.
 
 ### Commands
 - TODO table of contents
+- Use `falcon_multiqc --help` to see a list of commands and what they do. Each of the following commands also has a help page accessible via `falcon_multiqc <command> --help`.
+
 #### 1. Connect 
 This command connects the user to a postgres database and creates a new database if one doesn't exist.
 
@@ -135,10 +147,3 @@ NOTE: although you can use multiple --batch or --cohort options in one command, 
 
 =====================================================================================================================================
 
-## Dev instructions
-1. `git clone https://github.com/lwratten/project-falcon.git`
-2. `cd project-falcon`
-3.  Ensure your system has the tools in requirements.system installed.
-4. `python3 -m venv env` create a python virtual environment if you haven't already
-5. `source env/bin/activate`  activate / go into the virtual environment
-6. `pip install --editable .` this allows you to install the tool and updates automatically if you edit it (re-install if you change any of the cli / click things)
