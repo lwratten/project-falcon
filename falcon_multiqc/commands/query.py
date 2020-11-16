@@ -9,6 +9,7 @@ from database.models import Base, Sample, Batch, Cohort, RawData
 from sqlalchemy import Float, Text, or_, and_, func, distinct
 from sqlalchemy.orm import load_only, Load, Query
 from database.process_query import create_new_multiqc, create_csv
+from tabulate import tabulate
 
 """
 This command allows you to query the falcon multiqc database.
@@ -154,10 +155,19 @@ def query_metric(query, join, tool_metric):
         having(func.count(distinct(RawData.qc_tool)) == len(tool_metric)))
 
 def print_overview(session):
+
+    overview = []
+
+    # Make a nice list which we can give to tabulate
     for cohort_id, batch_name in session.query(Batch.cohort_id, Batch.batch_name):
-        num_samples = session.query(Sample).join(Batch, Batch.id == Sample.batch_id).\
-        filter(Batch.batch_name == batch_name, Sample.cohort_id == cohort_id).count()
-        click.echo(f"Cohort '{cohort_id}' batch '{batch_name}' has {num_samples} number of samples")
+        temp_line = [cohort_id, batch_name]
+        temp_line.append(session.query(Sample).join(Batch, Batch.id == Sample.batch_id).\
+        filter(Batch.batch_name == batch_name, Sample.cohort_id == cohort_id).count())
+        overview.append(temp_line)
+
+    overview.sort()
+    # Print a pretty table
+    click.echo(tabulate(overview, headers=["Cohort", "Batch", "Number of Samples"]))
 
 @click.command()
 @click.option(
@@ -275,7 +285,7 @@ def print_overview(session):
 @click.option(
     "-o",
     "--output",
-    type=click.Path(),
+    type=click.Path(exists=True),
     required=False,
     help="Output directory where query result will be saved.")    
 
