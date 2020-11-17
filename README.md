@@ -140,10 +140,9 @@ This command allows you to checks the paths in your database are still valid and
 Command for removing entries from database.
 
 `--overview` Prints an overview of the number of samples in each batch/cohort.
-`--cohort <cohortID>` - removes all entries associated with that cohort throughout database.
-`--batch <cohortID Batch_name>` - removes all entries associated with that batch throughout database.
+`--cohort <cohortID>` - removes all entries associated with that cohort throughout database, can be used multiple times.
+`--batch <cohortID Batch_name>` - removes all entries associated with that batch throughout database, can be used multiple times.
 
-NOTE: although you can use multiple --batch or --cohort options in one command, if both are used together, only --cohort will commit.
+NOTE: Don't use --batch or --cohort options in one command, use two seperate commands instead.
 
 =====================================================================================================================================
-

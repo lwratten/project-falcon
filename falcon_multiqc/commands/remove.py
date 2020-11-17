@@ -9,11 +9,11 @@ Command for removing entries from database.
 
 --overview Prints an overview of the number of samples in each batch/cohort.
 
---cohort <cohortID> - removes all entries associated with that cohort throughout database.
+--cohort <cohortID> - removes all entries associated with that cohort throughout database, can be used multiple times.
 
---batch <cohortID Batch_name> - removes all entries associated with that batch throughout database.
+--batch <cohortID Batch_name> - removes all entries associated with that batch throughout database, can be used multiple times.
 
-NOTE: although you can use multiple --batch or --cohort options in one command, if both are used together, only --cohort will commit.
+NOTE: Don't use --batch or --cohort options in one command, use two seperate commands instead.
 
 """
 
@@ -35,9 +35,8 @@ def cli(cohort, batch, overview):
                     # Delete all assoicated rows
                     session.query(Cohort.id).filter(Cohort.id == cohort_id).delete()
                     if batch:
-                        click.echo("\nWarning: if both --cohort and --batch are used together, only --cohort will execute."
-                        f"\nThe following will not be executed, but may have already been deleted if they belong to the same cohort:" 
-                        "\n{list(batch)}")
+                        raise Exception("\nBoth --cohort and --batch used in the same command, please try again as two seperate commands."
+                        f"\nNothing has been deleted from the database.")
             click.echo(f"Cohort(s) {list(cohort)} and all assoicated entries have been deleted.")
         elif batch:
             for cohort_id, batch_name in batch:
