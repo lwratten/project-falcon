@@ -199,7 +199,7 @@ stripChars = " \n\r\t\'\""
 def cli(directory, sample_metadata, input_csv, batch_description, cohort_description, batch_metadata, cohort_metadata):
     """Saves the given cohort directory to the falcon_multiqc database"""
 
-    if not directory and not input_csv:
+    if (not directory and not input_csv) and (not batch_metadata or cohort_metadata):
         raise Exception("Save requires either an input --directory OR --input_csv.")
     if directory and input_csv:
        raise Exception("Save requires only one of input --directory OR --input_csv, not both.")
@@ -268,7 +268,7 @@ def cli(directory, sample_metadata, input_csv, batch_description, cohort_descrip
                 try:
                     (session.query(Batch).filter(Batch.batch_name == batch_name).one().description) = batch_description
                 except NoResultFound:
-                    click.echo(f"Batch '{batch_name}' is not present in the database so description cannot be added."
+                    raise Exception(f"Batch '{batch_name}' is not present in the database so description cannot be added."
                     "\nAll batch description entries have been rolled back, please retry after fixing")
             session.commit()
             click.echo(f"Batch descriptions has been saved.")
@@ -288,7 +288,7 @@ def cli(directory, sample_metadata, input_csv, batch_description, cohort_descrip
                 try:
                     (session.query(Cohort).filter(Cohort.id == cohort_name).one().description) = cohort_description
                 except NoResultFound:
-                    click.echo(f"Cohort '{cohort_name}' is not present in the database so description cannot be added, exiting."
+                    raise Exception(f"Cohort '{cohort_name}' is not present in the database so description cannot be added, exiting."
                     "\nAll cohort description entries have been rolled back, please retry after fixing")
             session.commit()
             click.echo(f"Cohort descriptions has been saved.")
