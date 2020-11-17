@@ -152,9 +152,10 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
                 for type in types[cohort_id]:
                     if type not in old_type_list:
                         new_type_list.append(type)
-                new_type_list = ','.join(new_type_list)
-                new_type_list = new_type_list + old_type_list
-                session.query(Cohort).filter(Cohort.id == cohort_id).one().type = new_type_list
+                if new_type_list != []:
+                    new_type_list = ',' + ','.join(new_type_list)
+                    new_type_list = old_type_list + new_type_list
+                    session.query(Cohort).filter(Cohort.id == cohort_id).one().type = new_type_list
 
             multiqc_data_json = json.load(multiqc_data)
 
