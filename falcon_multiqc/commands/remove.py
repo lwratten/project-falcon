@@ -48,8 +48,7 @@ def cli(cohort, batch, overview):
                     # update cohort table sample_count column.
                     batch_sample_count = session.query(Batch).filter(Batch.batch_name == batch_name,Batch.cohort_id == cohort_id).one().sample_count
                     cohort_sample_count = session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count
-                    cohort_sample_count = cohort_sample_count - batch_sample_count
-                    session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count = cohort_sample_count
+                    session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count = cohort_sample_count - batch_sample_count
                     # update cohort table batch_count column.
                     batch_count = session.query(Cohort).filter(Cohort.id == cohort_id).one().batch_count
                     session.query(Cohort).filter(Cohort.id == cohort_id).one().batch_count = batch_count - 1
