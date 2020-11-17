@@ -2,7 +2,7 @@ import click
 import sys
 import os
 from database.crud import session_scope
-from database.process_query import create_new_multiqc, create_csv
+from database.process_query import create_new_multiqc, create_csv, print_csv
 from .query import print_overview
 
 """
@@ -28,7 +28,7 @@ Options:
 
 --overview Prints an overview of the number of samples in each batch/cohort.
 
-NOTE: If --multiqc or --csv flags are not used, result will print to stdout.
+NOTE: If --multiqc or --csv flags are not used, result will print to stdout as csv.
 
 Example_1 (Stdout): 
 `falcon_multiqc sql --sql sql.txt`
@@ -44,7 +44,7 @@ Where sql.txt contains the following:
                     where (
                         (rd.qc_tool = 'verifybamid' AND (rd.metrics->>'AVG_DP')::numeric::float < 30)
                         OR 
-                        (rd.qc_tool = 'picard_insertSize' AND (rd.metrics->>'MEAN_INSERT_SIZE')::numeric::float > 460)
+                        (rd.qc_tool = 'picard_insertSize' AND (rd.metrics->>'MEAN_INSERT_SIZE')::numeric::float > 410)
                         OR 
                         (rd.qc_tool = 'picard_wgsmetrics' AND (rd.metrics->>'PCT_EXC_DUPE')::numeric::float <= 0.0921)
                         )
@@ -52,7 +52,6 @@ Where sql.txt contains the following:
                     having count(rd.sample_id) >= 3
                 )
     )
-    and s.cohort_id = 'MGRB'
     order by s.sample_name
 
 Example_2 (CSV):
@@ -138,8 +137,7 @@ def cli(output, filename, sql, multiqc, csv, overview):
 
             if not multiqc and not csv and not overview:
                 # Print result.
-                click.echo(query_header)
-                [click.echo(row) for row in falcon_query]            
+                print_csv(query_header, falcon_query)           
 
         if overview:
             print_overview(session)
