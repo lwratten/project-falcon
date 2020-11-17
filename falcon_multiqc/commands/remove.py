@@ -45,7 +45,14 @@ def cli(cohort, batch, overview):
                     raise Exception(f"No batch {batch_name} is present in the database. Nothing has been deleted."
                                     "\nRun --overview option to see what is currently present.")
                 else:
-                    # Delete all assoicated rows
+                    # update cohort table sample_count column.
+                    batch_sample_count = session.query(Batch).filter(Batch.batch_name == batch_name,Batch.cohort_id == cohort_id).one().sample_count
+                    cohort_sample_count = session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count
+                    session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count = cohort_sample_count - batch_sample_count
+                    # update cohort table batch_count column.
+                    batch_count = session.query(Cohort).filter(Cohort.id == cohort_id).one().batch_count
+                    session.query(Cohort).filter(Cohort.id == cohort_id).one().batch_count = batch_count - 1
+                    # Delete all assoicated rows.
                     session.query(Batch.id).filter(Batch.batch_name == batch_name,Batch.cohort_id == cohort_id).delete()
             click.echo(f"Batch(s) {list(batch)} and all assoicated entries have been deleted.")
     if overview:
