@@ -5,13 +5,15 @@ from .query import print_overview
 from database.models import Base, Batch, Cohort
 
 """
-
 Command for removing entries from database.
---overview to see all the cohorts with there respective batches and number of samples
---cohort option requires one argument 'cohortID' - removes all entries associated with that cohort throughout db
---batch option requires two arguments 'cohortID and Batch' - removes all entries associated with that batch throughout db
 
-Note: although you can use multiple --batch or --cohort options in one command, if both are used together, only --cohort will commit
+--overview Prints an overview of the number of samples in each batch/cohort.
+
+--cohort <cohortID> - removes all entries associated with that cohort throughout database, can be used multiple times.
+
+--batch <cohortID Batch_name> - removes all entries associated with that batch throughout database, can be used multiple times.
+
+NOTE: Don't use --batch or --cohort options in one command, use two seperate commands instead.
 
 """
 
@@ -33,9 +35,8 @@ def cli(cohort, batch, overview):
                     # Delete all assoicated rows
                     session.query(Cohort.id).filter(Cohort.id == cohort_id).delete()
                     if batch:
-                        click.echo("\nWarning: if both --cohort and --batch are used together, only --cohort will execute."
-                        f"\nThe following will not be executed, but may have already been deleted if they belong to the same cohort:" 
-                        "\n{list(batch)}")
+                        raise Exception("\nBoth --cohort and --batch used in the same command, please try again as two seperate commands."
+                        f"\nNothing has been deleted from the database.")
             click.echo(f"Cohort(s) {list(cohort)} and all assoicated entries have been deleted.")
         elif batch:
             for cohort_id, batch_name in batch:
@@ -44,7 +45,14 @@ def cli(cohort, batch, overview):
                     raise Exception(f"No batch {batch_name} is present in the database. Nothing has been deleted."
                                     "\nRun --overview option to see what is currently present.")
                 else:
-                    # Delete all assoicated rows
+                    # update cohort table sample_count column.
+                    batch_sample_count = session.query(Batch).filter(Batch.batch_name == batch_name,Batch.cohort_id == cohort_id).one().sample_count
+                    cohort_sample_count = session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count
+                    session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count = cohort_sample_count - batch_sample_count
+                    # update cohort table batch_count column.
+                    batch_count = session.query(Cohort).filter(Cohort.id == cohort_id).one().batch_count
+                    session.query(Cohort).filter(Cohort.id == cohort_id).one().batch_count = batch_count - 1
+                    # Delete all assoicated rows.
                     session.query(Batch.id).filter(Batch.batch_name == batch_name,Batch.cohort_id == cohort_id).delete()
             click.echo(f"Batch(s) {list(batch)} and all assoicated entries have been deleted.")
     if overview:

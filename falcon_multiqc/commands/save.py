@@ -41,7 +41,8 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
 
             # Keep track of samples added, so we know its primary key, when saving raw data later.
             samples = {}  # name : primary key id
-            batches = [] # batches within given metadata 
+            batches = {} # batches within given metadata 
+            types = {} # stores number of types in a given cohort 
 
             # Cohort id for this input. Cohort id must be the same for every batch of this input.
             cohort_id = None
@@ -72,13 +73,15 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
                             description=cohort_description
                         )
                         session.add(cohort_row)
+                    batches[cohort_id] = [] 
+                    types[cohort_id] = []
                 elif split[1].strip(stripChars) != cohort_id:
                     raise Exception(f"Metadata input has multiple cohort ids ({cohort_id} and {split[1]}). Save supports one cohort at a time.")
                 
                 batch_id = None
-                if batch_name not in batches:
+                if batch_name not in batches[cohort_id]:
                     # First time this batch_name is seen from this given metadata.csv
-                    batches.append(batch_name) 
+                    batches[cohort_id].append(batch_name) 
                     if session.query(Batch.id).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).scalar() is None:
                         # Batch does not exist in database.
                         batch_row = Batch(
@@ -116,21 +119,65 @@ def save_sample(directory, sample_metadata, session, cohort_description, batch_d
                 session.add(sample_row)
                 session.flush()
                 samples[sample_name] = sample_row.id
+                if type not in types[cohort_id]:
+                    types[cohort_id].append(type)
+
+            # Enter sample counts for batch/cohort.
+            for cohort_id in batches:
+                cohort_sample_count = session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count
+                batch_count = session.query(Cohort).filter(Cohort.id == cohort_id).one().batch_count
+                if cohort_sample_count == None:
+                    cohort_sample_count = 0
+                if batch_count == None:
+                    batch_count = 0
+                for batch_name in batches[cohort_id]:
+                    # Count number of samples in given batch.
+                    batch_sample_count = session.query(Sample).join(Batch, Batch.id == Sample.batch_id).\
+                    filter(Batch.batch_name == batch_name, Sample.cohort_id == cohort_id).count()
+                    # Update Batch count column.
+                    session.query(Batch).filter(Batch.batch_name == batch_name, Batch.cohort_id == cohort_id).one().sample_count = batch_sample_count
+                    cohort_sample_count += batch_sample_count
+                batch_count = batch_count + len(batches[cohort_id]) # Update the batch count. 
+                session.query(Cohort).filter(Cohort.id == cohort_id).one().sample_count = cohort_sample_count
+                session.query(Cohort).filter(Cohort.id == cohort_id).one().batch_count = batch_count
+                
+            # Update cohort tables with types if needed
+            for cohort_id in types:
+                old_type_list = session.query(Cohort).filter(Cohort.id == cohort_id).one().type
+                if old_type_list == None:
+                    session.query(Cohort).filter(Cohort.id == cohort_id).one().type = ','.join(types[cohort_id])
+                    continue
+                # Update cohort with new type info.
+                new_type_list = []
+                for type in types[cohort_id]:
+                    if type not in old_type_list:
+                        new_type_list.append(type)
+                if new_type_list != []:
+                    new_type_list = ',' + ','.join(new_type_list)
+                    new_type_list = old_type_list + new_type_list
+                    session.query(Cohort).filter(Cohort.id == cohort_id).one().type = new_type_list
 
             multiqc_data_json = json.load(multiqc_data)
 
             for tool in multiqc_data_json["report_saved_raw_data"]:
-                if tool == "multiqc_picard_varientCalling":
-                    tool = "multiqc_picard_variantCalling" # Correct historical typo from multiqc JSON.
+                if tool == 'multiqc_general_stats':
+                    continue
                 for sample in multiqc_data_json["report_saved_raw_data"][tool]:
                     sample_name = sample.split("_")[0].strip(stripChars)
-                    
                     try:
-                        raw_data_row = RawData(
-                            sample_id=samples[sample_name],
-                            qc_tool=tool[8:],
-                            metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
-                        )
+                        if tool == "multiqc_picard_varientCalling":
+                            tool2 = "multiqc_picard_variantCalling" # Correct historical typo from multiqc JSON.
+                            raw_data_row = RawData(
+                                sample_id=samples[sample_name],
+                                qc_tool=tool2[8:],
+                                metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
+                            )
+                        else:
+                            raw_data_row = RawData(
+                                sample_id=samples[sample_name],
+                                qc_tool=tool[8:],
+                                metrics=multiqc_data_json["report_saved_raw_data"][tool][sample]
+                            )
                         session.add(raw_data_row)
                     except KeyError:
                         raise Exception(f"Metadata file {sample_metadata_name} does not match with multiqc folder {directory} data JSON file"
@@ -151,6 +198,11 @@ stripChars = " \n\r\t\'\""
 @click.option("-cm", "--cohort_metadata", type=click.File(), required=False, help="Cohort metadata file (with descriptions).")
 def cli(directory, sample_metadata, input_csv, batch_description, cohort_description, batch_metadata, cohort_metadata):
     """Saves the given cohort directory to the falcon_multiqc database"""
+
+    if (not directory and not input_csv) and not (batch_metadata or cohort_metadata):
+        raise Exception("Save requires either an input --directory OR --input_csv.")
+    if directory and input_csv:
+       raise Exception("Save requires only one of input --directory OR --input_csv, not both.")
 
     with session_scope() as session:
 
@@ -216,7 +268,7 @@ def cli(directory, sample_metadata, input_csv, batch_description, cohort_descrip
                 try:
                     (session.query(Batch).filter(Batch.batch_name == batch_name).one().description) = batch_description
                 except NoResultFound:
-                    click.echo(f"Batch '{batch_name}' is not present in the database so description cannot be added."
+                    raise Exception(f"Batch '{batch_name}' is not present in the database so description cannot be added."
                     "\nAll batch description entries have been rolled back, please retry after fixing")
             session.commit()
             click.echo(f"Batch descriptions has been saved.")
@@ -236,7 +288,7 @@ def cli(directory, sample_metadata, input_csv, batch_description, cohort_descrip
                 try:
                     (session.query(Cohort).filter(Cohort.id == cohort_name).one().description) = cohort_description
                 except NoResultFound:
-                    click.echo(f"Cohort '{cohort_name}' is not present in the database so description cannot be added, exiting."
+                    raise Exception(f"Cohort '{cohort_name}' is not present in the database so description cannot be added, exiting."
                     "\nAll cohort description entries have been rolled back, please retry after fixing")
             session.commit()
             click.echo(f"Cohort descriptions has been saved.")

@@ -89,6 +89,7 @@ class Batch(Base):
 
     batch_name = Column(String, nullable=False)
     path = Column(String, nullable=False)
+    sample_count = Column(Integer)
     description = Column(Text)
 
     # Batch-Patients many to many
@@ -106,6 +107,9 @@ class Cohort(Base):
 
     id = Column(String, primary_key=True, nullable=False)
 
+    sample_count = Column(Integer)
+    batch_count = Column(Integer)
+    type = Column(Text)
     description = Column(Text)
 
     # relationship(batch-cohort, patient-cohort, multiqc-cohort, sample-cohort many to 1)

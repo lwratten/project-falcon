@@ -12,6 +12,10 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=read_requirements(),
+    classifiers=[
+        "Operating System :: POSIX",
+        "Programming Language :: Python :: 3",
+    ],
     entry_points="""
         [console_scripts]
         falcon_multiqc=falcon_multiqc.cli:safe_entry_point
