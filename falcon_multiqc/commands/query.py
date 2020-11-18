@@ -167,7 +167,7 @@ def print_overview(session):
 
     overview.sort()
     # Print a pretty table
-    click.echo(tabulate(overview, headers=["Cohort", "Batch", "Number of Samples"]))
+    click.echo(tabulate(overview, headers=["Cohort", "Batch", "Number of Samples"], tablefmt="pretty"))
 
 @click.command()
 @click.option(
