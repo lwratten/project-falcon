@@ -6,9 +6,10 @@ import os.path
 
 from database.crud import session_scope
 from database.models import Base, Sample, Batch, Cohort, RawData
-from sqlalchemy import Float, or_, and_, func, distinct
+from sqlalchemy import Float, Text, or_, and_, func, distinct
 from sqlalchemy.orm import load_only, Load, Query
 from database.process_query import create_new_multiqc, create_csv, print_csv
+from tabulate import tabulate
 
 """
 This command allows you to query the falcon multiqc database.
@@ -113,8 +114,18 @@ def query_select(session, columns, join, tool_metric_filters, multiqc):
 
     return query
 
-# TODO: Currently only supports metrics that are float values. Support more.
-# Returns a sqlalchemy query that queries the database with a filter
+# Takes in a tool metric value and determines if we need to cast
+# our db column as a Float or Text
+def cast_type(value):
+    result = Float
+    try:
+        float(value)
+    except ValueError:
+        result = Text  
+    return result
+
+
+# Returns an sqlalchemy query that queries the database with a filter
 # with the given tool, attribute, operator and value.
 def query_metric(query, join, tool_metric):
     group_by_columns = []
@@ -138,15 +149,25 @@ def query_metric(query, join, tool_metric):
             return (query.filter(or_(RawData.qc_tool == tool for tool, attribute, operator, value in tool_metric))
             .group_by(*group_by_columns).having(func.count(RawData.qc_tool) == len(tool_metric)))
 
-    return (query.filter(or_(and_(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(Float), value)) 
-            for tool, attribute, operator, value in tool_metric)).group_by(*group_by_columns).
-            having(func.count(distinct(RawData.qc_tool)) == len(tool_metric)))
+    # Loop through each tool_metric joining each result on OR that matches the tool name and meets the value condition.
+    return (query.filter(or_(and_(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(cast_type(value)), value)) 
+        for tool, attribute, operator, value in tool_metric)).group_by(*group_by_columns).
+        having(func.count(distinct(RawData.qc_tool)) == len(tool_metric)))
 
 def print_overview(session):
+
+    overview = []
+
+    # Make a nice list which we can give to tabulate
     for cohort_id, batch_name in session.query(Batch.cohort_id, Batch.batch_name):
-        num_samples = session.query(Sample).join(Batch, Batch.id == Sample.batch_id).\
-        filter(Batch.batch_name == batch_name, Sample.cohort_id == cohort_id).count()
-        click.echo(f"Cohort '{cohort_id}' batch '{batch_name}' has {num_samples} number of samples")
+        temp_line = [cohort_id, batch_name]
+        temp_line.append(session.query(Sample).join(Batch, Batch.id == Sample.batch_id).\
+        filter(Batch.batch_name == batch_name, Sample.cohort_id == cohort_id).count())
+        overview.append(temp_line)
+
+    overview.sort()
+    # Print a pretty table
+    click.echo(tabulate(overview, headers=["Cohort", "Batch", "Number of Samples"], tablefmt="pretty"))
 
 @click.command()
 @click.option(
@@ -164,7 +185,7 @@ def print_overview(session):
     multiple=True, 
     type=(str, str, str, str), 
     required=False, 
-    help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP < 30'.")
+    help="Filter by tool, metric, operator and number, e.g. 'verifybamid AVG_DP '<' 30'.")
 
 @click.option(
     "-b",
@@ -256,6 +277,12 @@ def print_overview(session):
     help="Create a csv report.")
 
 @click.option(
+    "--pretty", 
+    is_flag=True, 
+    required=False, 
+    help="Prints a formatted table. Cannot be used with the plot command.")
+
+@click.option(
     "--overview", 
     is_flag=True, 
     required=False, 
@@ -264,7 +291,7 @@ def print_overview(session):
 @click.option(
     "-o",
     "--output",
-    type=click.Path(),
+    type=click.Path(exists=True),
     required=False,
     help="Output directory where query result will be saved (required when --csv or --multiqc).")    
 
@@ -290,6 +317,7 @@ def cli(
     type,
     multiqc,
     csv,
+    pretty,
     overview,
     output,
     filename):
@@ -395,7 +423,10 @@ def cli(
         click.echo("Creating csv report...")
         create_csv(query_header, falcon_query, output, filename)
 
-    if not csv and not overview:
+    if pretty and not csv and not overview:
+        click.echo(tabulate(falcon_query, query_header, tablefmt="pretty"))
+
+    elif not csv and not overview:
         # Print result.
         print_csv(query_header, falcon_query)
 
