@@ -277,6 +277,12 @@ def print_overview(session):
     help="Create a csv report.")
 
 @click.option(
+    "--pretty", 
+    is_flag=True, 
+    required=False, 
+    help="Prints a formatted table. Cannot be used with the plot command.")
+
+@click.option(
     "--overview", 
     is_flag=True, 
     required=False, 
@@ -311,6 +317,7 @@ def cli(
     type,
     multiqc,
     csv,
+    pretty,
     overview,
     output,
     filename):
@@ -416,7 +423,10 @@ def cli(
         click.echo("Creating csv report...")
         create_csv(query_header, falcon_query, output, filename)
 
-    if not csv and not overview:
+    if pretty:
+        click.echo(tabulate(falcon_query, query_header, tablefmt="pretty"))
+
+    elif not csv and not overview:
         # Print result.
         print_csv(query_header, falcon_query)
 
