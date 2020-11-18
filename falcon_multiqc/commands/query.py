@@ -8,8 +8,10 @@ from database.crud import session_scope
 from database.models import Base, Sample, Batch, Cohort, RawData
 from sqlalchemy import Float, Text, or_, and_, func, distinct
 from sqlalchemy.orm import load_only, Load, Query
+from sqlalchemy.orm.exc import MultipleResultsFound
 from database.process_query import create_new_multiqc, create_csv, print_csv
 from tabulate import tabulate
+from collections import defaultdict
 
 """
 This command allows you to query the falcon multiqc database.
@@ -144,15 +146,20 @@ def query_metric(query, join, tool_metric):
 
     # Check operator validity.
     # If ANY operator is invalid - we detect user wants to filter based on metric (WITHOUT a conditional value).
+    # Constructs dictionary mapping tool with metric, attribute, value.
+    tool_metric_map = defaultdict(list)
     for tm in tool_metric:
         if tm[2] not in ops:
             return (query.filter(or_(RawData.qc_tool == tool for tool, attribute, operator, value in tool_metric))
             .group_by(*group_by_columns).having(func.count(RawData.qc_tool) == len(tool_metric)))
 
+        # Map tool metric, attribute, value.
+        tool_metric_map[tm[0]].append(tm[1:]) 
+
     # Loop through each tool_metric joining each result on OR that matches the tool name and meets the value condition.
-    return (query.filter(or_(and_(RawData.qc_tool == tool, ops[operator](RawData.metrics[attribute].astext.cast(cast_type(value)), value)) 
-        for tool, attribute, operator, value in tool_metric)).group_by(*group_by_columns).
-        having(func.count(distinct(RawData.qc_tool)) == len(tool_metric)))
+    return (query.filter(or_(and_(*[RawData.qc_tool == tool, *[ops[operator](RawData.metrics[attribute].astext.cast(cast_type(value)), value) 
+            for attribute, operator, value in tool_metric_map[tool]]]) 
+            for tool in tool_metric_map)).group_by(*group_by_columns).having(func.count(distinct(RawData.qc_tool)) == len(tool_metric_map)))
 
 def print_overview(session):
 
@@ -407,7 +414,16 @@ def cli(
         falcon_query = falcon_query.filter(or_(*conditions))
 
     ### ============================== RESULT / OUTPUT =======================================####
-    if falcon_query == None:
+    if len(falcon_query.all()) == 0:
+        for tm in tool_metric:
+            # Check whether tool/metric are correctly spelled.
+            try:
+                if session.query(RawData).filter(RawData.qc_tool == tm[0]).scalar() is None:
+                    raise Exception(f"The tool {tm[0]} is not present in the database, please check its validity.")
+            except MultipleResultsFound:
+                metrics = session.query(RawData.metrics).filter(RawData.qc_tool == tm[0]).first()
+                if tm[1] not in metrics[0]:
+                    raise Exception(f"The metric {tm[1]} is not present in the metrics of tool {tm[0]}, please check its validity.")
         raise Exception("No results from query")
 
     # Create header from the current query (falcon_query).
@@ -423,10 +439,10 @@ def cli(
         click.echo("Creating csv report...")
         create_csv(query_header, falcon_query, output, filename)
 
-    if pretty and not csv and not overview:
+    if pretty and not csv and not multiqc and not overview:
         click.echo(tabulate(falcon_query, query_header, tablefmt="pretty"))
 
-    elif not csv and not overview:
+    elif not csv and not multiqc and not overview:
         # Print result.
         print_csv(query_header, falcon_query)
 
