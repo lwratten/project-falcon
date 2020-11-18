@@ -423,7 +423,7 @@ def cli(
         click.echo("Creating csv report...")
         create_csv(query_header, falcon_query, output, filename)
 
-    if pretty:
+    if pretty and not csv and not overview:
         click.echo(tabulate(falcon_query, query_header, tablefmt="pretty"))
 
     elif not csv and not overview:
