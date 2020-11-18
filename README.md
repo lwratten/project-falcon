@@ -2,12 +2,12 @@
 A tool for parsing multiqc reports into a database with querying and charting capabilities from the command-line
 
 ## User Setup
-1. git clone https://github.com/lwratten/project-falcon.git
-2. cd project-falcon
-3. Ensure your system has the tools in requirements.system installed.
-4. python3 -m venv env create a python virtual environment if you haven't already
-5. source env/bin/activate go into the virtual environment
-6. pip install . or pip install --editable . if developing
+1. Clone the repository to your local machine using `git clone https://github.com/lwratten/project-falcon.git`.
+2. Navigate to the repository using `cd project-falcon`.
+3. Ensure your system has the tools in `requirements.system` installed.
+4. Use `python3 -m venv env` to create a python virtual environment if you haven't already.
+5. Use `source env/bin/activate` to go into the virtual environment.
+6. Install software requirements using `pip install .` or `pip install --editable .` if developing.
 
 ## System Requirements
 Falcon MultiQC supports Linux based operating systems with the system requirements required to install the tool (as described in requirements.system).
