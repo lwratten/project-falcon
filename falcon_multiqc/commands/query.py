@@ -416,6 +416,16 @@ def cli(
     ### ============================== RESULT / OUTPUT =======================================####
     if len(falcon_query.all()) == 0:
         for tm in tool_metric:
+            # Check whether tool is valid.
+            if session.query(RawData.id).filter(RawData.qc_tool == tm[0]).first() is None:
+                raise Exception(f"The tool {tm[0]} is not present in the database, please check its validity.")
+            
+            metrics = session.query(RawData.metrics).filter(RawData.qc_tool == tm[0]).first()
+            if tm[1] not in metrics[0]:
+                raise Exception(f"The metric {tm[1]} is not present in the metrics of tool {tm[0]}, please check its validity.")
+
+        raise Exception("No results from query")
+        for tm in tool_metric:
             # Check whether tool/metric are correctly spelled.
             try:
                 if session.query(RawData).filter(RawData.qc_tool == tm[0]).scalar() is None:
