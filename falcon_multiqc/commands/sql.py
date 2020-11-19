@@ -4,6 +4,7 @@ import os
 from database.crud import session_scope
 from database.process_query import create_new_multiqc, create_csv, print_csv
 from .query import print_overview
+from tabulate import tabulate
 
 """
 This command allows you to query the falcon multiqc database using raw SQL.
@@ -18,7 +19,7 @@ Options:
 -f --filename <filename> Name (no extensions) the csv or multiqc html report when using the --csv or --multiqc options
 
 -c --csv Creates csv file in output directory from query result 
-    See example_2
+    See example_2, example_3
 
 -m --multiqc Use this flag to generate a multiqc report from query, saved in output directory. 
     See example_3
@@ -69,19 +70,22 @@ Where sql2.txt contains the following:
     GROUP BY sample.id, batch.path HAVING count(distinct raw_data.qc_tool) = 2
 
 
-Example_3 (Multiqc)
-`falcon_multiqc sql --sql sql3.txt --multiqc --output output --filename your_multiqc_report`
+Example_3 (Multiqc and csv)
+`falcon_multiqc sql --sql sql3.txt --multiqc --csv --output output --filename your_multiqc_report`
 
 Where sql2.txt contains the following (need to select for both sample.sample_name AND batch.path when using --multiqc flag): 
 
     SELECT sample.sample_name,
     batch.path,
     max(raw_data.metrics ->> 'AVG_DP') AS AVG_DP, 
-    max(raw_data.metrics ->> 'MEAN_INSERT_SIZE') AS MEAN_INSERT_SIZE 
+    max(raw_data.metrics ->> '#READS') AS READS, 
+    max(raw_data.metrics ->> 'MEAN_INSERT_SIZE') AS MEAN_INSERT_SIZE, 
+    max(raw_data.metrics ->> 'PCT_EXC_DUPE') AS PCT_EXC_DUPE 
     FROM sample JOIN batch ON sample.batch_id = batch.id JOIN raw_data ON sample.id = raw_data.sample_id 
-    WHERE (raw_data.qc_tool='verifybamid' AND CAST((raw_data.metrics ->> 'AVG_DP') AS FLOAT) < 28) 
-    OR (raw_data.qc_tool='picard_insertSize' AND CAST((raw_data.metrics ->> 'MEAN_INSERT_SIZE') AS FLOAT) > 490) 
-    GROUP BY sample.id, batch.path HAVING count(distinct raw_data.qc_tool) = 2
+    WHERE (raw_data.qc_tool='verifybamid' AND CAST((raw_data.metrics ->> 'AVG_DP') AS FLOAT) < 30 AND CAST((raw_data.metrics ->> '#READS') AS FLOAT) < 2469490) 
+    OR (raw_data.qc_tool='picard_insertSize' AND CAST((raw_data.metrics ->> 'MEAN_INSERT_SIZE') AS FLOAT) > 420) 
+    OR (raw_data.qc_tool = 'picard_wgsmetrics' AND CAST((raw_data.metrics->>'PCT_EXC_DUPE') AS float) <= 0.0921)
+    GROUP BY sample.id, batch.path HAVING count(distinct raw_data.qc_tool) = 3
 
 """
 
@@ -92,7 +96,8 @@ Where sql2.txt contains the following (need to select for both sample.sample_nam
 @click.option("-m", "--multiqc", is_flag=True, required=False, help="Create a multiqc report.")
 @click.option("-c", "--csv", is_flag=True, required=False, help="Create a csv report.")
 @click.option("--overview", is_flag=True, required=False, help="Prints an overview of the number of samples in each batch/cohort.")
-def cli(output, filename, sql, multiqc, csv, overview):
+@click.option("--pretty", is_flag=True, required=False, help="Prints a formatted table. Cannot be used with the plot command.")
+def cli(output, filename, sql, multiqc, csv, overview, pretty):
     """SQL query tool: ensure all queries SELECT for sample_name from sample table AND path from batch table"""
 
     if (multiqc or csv) and not output:
@@ -121,7 +126,7 @@ def cli(output, filename, sql, multiqc, csv, overview):
             
             falcon_query = session.execute(sql) # Executes SQL query against database.
             query_header = falcon_query.keys() # Create header from the current query (falcon_query).
-            click.echo(f"Query resulted in {falcon_query.rowcount} samples.")
+            click.echo(f"Query returned {falcon_query.rowcount} samples.")
 
             if multiqc:
                 if len([col for col in query_header if 'sample_name' in col or 'path' in col]) == 2:
@@ -134,10 +139,14 @@ def cli(output, filename, sql, multiqc, csv, overview):
             if csv:
                 click.echo("Creating csv report...")
                 create_csv(query_header, falcon_query, output, filename)
+            
+            if pretty and not csv and not multiqc and not overview:
+                # Print result.
+                click.echo(tabulate(falcon_query, query_header, tablefmt="pretty")) 
 
             if not multiqc and not csv and not overview:
                 # Print result.
-                print_csv(query_header, falcon_query)           
+                print_csv(query_header, falcon_query)       
 
         if overview:
             print_overview(session)

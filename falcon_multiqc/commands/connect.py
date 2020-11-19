@@ -2,11 +2,14 @@ import click
 import re
 import sys
 import os.path
+import importlib
 from getpass import getpass
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import OperationalError
 from .check_db import check_db_paths
 from database.models import get_tables
+from database import config
+from database import crud
 
 """
 Connect command allows user to modify the config.py DATABASE_URI
@@ -95,7 +98,8 @@ def cli(uri, skip_check):
                 conn.execute("commit")  # databases cannot be created inside transactions, this line will close the previous transaction
                 conn.execute(f"create database {uri[4]}") if uri else conn.execute(f"create database {database}")  # create an empty database
                 from database.crud import create_database
-
+                importlib.reload(config)
+                importlib.reload(crud)
                 create_database()  # populate the database with tables
                 click.echo("Database has been created!")
             break
