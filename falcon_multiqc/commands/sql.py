@@ -96,7 +96,8 @@ Where sql2.txt contains the following (need to select for both sample.sample_nam
 @click.option("-m", "--multiqc", is_flag=True, required=False, help="Create a multiqc report.")
 @click.option("-c", "--csv", is_flag=True, required=False, help="Create a csv report.")
 @click.option("--overview", is_flag=True, required=False, help="Prints an overview of the number of samples in each batch/cohort.")
-def cli(output, filename, sql, multiqc, csv, overview):
+@click.option("--pretty", is_flag=True, required=False, help="Prints a formatted table. Cannot be used with the plot command.")
+def cli(output, filename, sql, multiqc, csv, overview, pretty):
     """SQL query tool: ensure all queries SELECT for sample_name from sample table AND path from batch table"""
 
     if (multiqc or csv) and not output:
@@ -138,10 +139,14 @@ def cli(output, filename, sql, multiqc, csv, overview):
             if csv:
                 click.echo("Creating csv report...")
                 create_csv(query_header, falcon_query, output, filename)
+            
+            if pretty and not csv and not multiqc and not overview:
+                # Print result.
+                click.echo(tabulate(falcon_query, query_header, tablefmt="pretty")) 
 
             if not multiqc and not csv and not overview:
                 # Print result.
-                click.echo(tabulate(falcon_query, query_header, tablefmt="pretty"))       
+                print_csv(query_header, falcon_query)       
 
         if overview:
             print_overview(session)
