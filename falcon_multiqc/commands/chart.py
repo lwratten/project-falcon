@@ -57,8 +57,8 @@ def cli(data, output, filename, type, compare):
   """Chart data from the query command. Requires csv input (--data or stdin)."""
   if data:
     input_df = pd.read_csv(data)
-  elif sys.stdin.isatty(): # Stdin
-    data = click.get_text_stream('stdin').value()
+  elif not sys.stdin.isatty(): # Stdin
+    input_df = pd.read_csv(click.get_text_stream('stdin'))
   else:
     raise Exception("Chart requires csv data input via --data or stdin.")  
 
