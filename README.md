@@ -116,7 +116,7 @@ Options:
 - `--filename <filename>` Name (no extensions) the csv or multiqc html report when using the `--csv` or `--multiqc` options
 
 - `--csv` Creates csv file in output directory from query result 
-    See example_2
+    See example_2, example_3
 
 - `--multiqc` Use this flag to generate a multiqc report from query, saved in output directory. 
     See example_3

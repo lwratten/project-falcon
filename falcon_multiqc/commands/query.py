@@ -440,10 +440,12 @@ def cli(
         create_csv(query_header, falcon_query, output, filename)
 
     if pretty and not csv and not multiqc and not overview:
+        click.echo(f'Query returned {falcon_query.count()} samples.')
         click.echo(tabulate(falcon_query, query_header, tablefmt="pretty"))
 
     elif not csv and not multiqc and not overview:
         # Print result.
+        click.echo(f'Query returned {falcon_query.count()} samples.')
         print_csv(query_header, falcon_query)
 
     if overview:
