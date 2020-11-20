@@ -34,6 +34,7 @@ This command connects the user to a postgres database and creates a new database
   - `--uri` <Database URI> -- Enter a URI to connect to the database with (URI in the form `postgres+psycopg2://USERNAME:PASSWORD@IP_ADDRESS:PORT/DATABASE_NAME`).
   - `--skip-check` -- Skip checking file paths in the database when connecting to an existing database
 
+#### Save 
 
 ```
 falcon_multiqc save
@@ -455,8 +456,9 @@ Command for removing entries from database.
 
 NOTE: Don't use --batch or --cohort options in one command, use two seperate commands instead.
 
+<br>
 
-## Database Column Names {#database-column-names}
+## Database Column Names
 
 The following information may be useful for using the `--compare` option in the chart command.
 
