@@ -9,16 +9,16 @@ A tool for parsing multiqc reports into a database with querying and charting ca
 5. Use `source env/bin/activate` to go into the virtual environment.
 6. Install software requirements using `pip install --editable .`
 
-## System Requirements
+### System Requirements
 Falcon MultiQC supports Linux based operating systems with the system requirements required to install the tool (as described in requirements.system).
 
-## Database Server Setup
+### Database Server Setup
 Falcon MultiQC requires a PostgreSQL database server to have already been set up. Keep note of your server’s username, password and port. This information is required when connecting FalconMultiQC to your server.
-
-### Commands
+<br>
+## Commands
 - Use `falcon_multiqc --help` to see a list of commands and what they do. Each of the following commands also has a help page accessible via `falcon_multiqc <command> --help`.
-
-#### 1. Connect 
+<br>
+#### Connect 
 
 
 ```
@@ -41,36 +41,35 @@ falcon_multiqc save
 
 This command saves multiqc data to the database. You can save one directory at a time using `--directory` or multiple using the `--input_csv` option. One of these two input options are required.
 
-
-#### Saving one directory:
-
+##### Saving one directory:
 
 
-##### Required Parameters:
+
+###### Required Parameters:
 
 *   `--directory` Path to the multiqc output directory to be saved
 *   `--sample_metadata` Path to the sample metadata file (see sample_metadata below)  \
 
 
 
-##### Optional Parameters:
+###### Optional Parameters:
 
 *   `--batch_description` String of a description to give every batch in this input.
 *   `--cohort_description` String of a description to give every cohort in this input.
 *   `--batch_metadata `Path to file with batch_metadata (see batch_metadata below)
 *   `--cohort_metadata` Path to file with cohort_metadata (see cohort_metadata below)
 
+<br>
+##### Saving multiple directories (bulk saving):
 
-#### Saving multiple directories (bulk saving):
-
-    Required Parameters:
+###### Required Parameters:
 
 *   `--input_csv` Path to the input csv of paths and metadata paths (see input_csv) \
 
     *   If using this option, directory and sample_metadata parameters are not required.
 
-
-#### sample_metadata (required):
+<br>
+##### sample_metadata (required):
 
 A CSV (comma-separated) in the format with the following format…
 
@@ -101,8 +100,8 @@ A CSV (comma-separated) in the format with the following format…
 </table>
 
 
-
-#### batch_metdata (optional):
+<br>
+##### batch_metdata (optional):
 
 A CSV (comma-separated) in the format with the following format…
 
@@ -120,9 +119,9 @@ A CSV (comma-separated) in the format with the following format…
 
 
 `--batch_metadata` can also be used on its own to save batch metadata to a batch that already exists in the database.
+<br>
 
-
-#### cohort_metadata (optional):
+##### cohort_metadata (optional):
 
 
 <table>
@@ -141,8 +140,8 @@ A CSV (comma-separated) in the format with the following format…
 
 `--cohort_metadata` can also be used on its own to save cohort metadata to a cohort that already exists in the database.
 
-
-#### Save Examples:
+<br>
+##### Save Examples:
 
 
 <table>
@@ -192,13 +191,13 @@ A CSV (comma-separated) in the format with the following format…
   </tr>
 </table>
 
-
-#### 3. Query
+<br>
+#### Query
 ```
 falcon_multiqc query
 ```
 This command allows you to query the falcon multiqc database. All parameters are optional to query. Adding multiple options for --select or any of the filters is supported.
-#### 1. Select:
+##### 1. Select:
 
 `--select` table information that will be included in the output. 
 
@@ -206,7 +205,7 @@ This command allows you to query the falcon multiqc database. All parameters are
 *   The entire table’s columns will be included in the output if selected.
 *   Selecting ‘tool-metric’ will result in the metric/s as its own column in the output.
 
-#### Query Select Examples:
+##### Query Select Examples:
 
 
 <table>
@@ -220,7 +219,7 @@ This command allows you to query the falcon multiqc database. All parameters are
   </tr>
 </table>
 
-#### 2. Filtering:
+##### 2. Filtering:
 
 Add filtering with the following options. Multiple filters will behave like OR. Multiple `--tool-metric`s behave like AND.
 
@@ -365,9 +364,9 @@ This will result in all samples with a MEAN_INSERT size greater than 420 AND PCT
   </tr>
 </table>
 
+<br>
 
-
-#### 4. Chart
+#### Chart
 
 ```
 falcon_multiqc chart
@@ -390,8 +389,8 @@ This command allows you to visualise the output of the `query` command. The outp
   - `--compare` column that will be plotted on the x-axis [Optional].
   - Supports multiple metrics (will be plotted as separate graphs).
 
-
-#### 5. SQL
+<br>
+#### SQL
 This command allows you to query the falcon multiqc database using raw SQL.
 
 NOTE: example_1, example_2, example_3 can be found in the sql.py doc string.
@@ -417,8 +416,8 @@ Options:
 
 NOTE: If `--multiqc` or `--csv` flags are not used, result will print to stdout.
     See example_1
-
-#### 6. Check Database
+<br>
+#### Check Database
 
 ```
 falcon_multiqc check_db
@@ -432,9 +431,9 @@ Optional Parameter:
 
 
 *   `--skip-update` skips prompts for invalid paths while checking the database.
+<br>
 
-
-#### 7. Remove
+#### Remove
 ```
 falcon_multiqc remove
 ```
@@ -449,7 +448,7 @@ NOTE: Don't use --batch or --cohort options in one command, use two seperate com
 
 ## Database Column Names {#database-column-names}
 
-The following information may be useful for using the --compare option in the chart command.
+The following information may be useful for using the `--compare` option in the chart command.
 
 
 <table>
