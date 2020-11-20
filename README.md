@@ -1,4 +1,4 @@
-# falcon-multiqc
+# ![Falcon_MultiQC](falcon_logo.png)
 A tool for parsing multiqc reports into a database with querying and charting capabilities from the command-line
 
 ## User Setup
