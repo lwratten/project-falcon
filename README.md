@@ -18,6 +18,7 @@ Falcon MultiQC requires a PostgreSQL database server to have already been set up
 ## Commands
 - Use `falcon_multiqc --help` to see a list of commands and what they do. Each of the following commands also has a help page accessible via `falcon_multiqc <command> --help`.
 <br>
+
 #### Connect 
 
 
@@ -60,6 +61,7 @@ This command saves multiqc data to the database. You can save one directory at a
 *   `--cohort_metadata` Path to file with cohort_metadata (see cohort_metadata below)
 
 <br>
+
 ##### Saving multiple directories (bulk saving):
 
 ###### Required Parameters:
@@ -69,6 +71,7 @@ This command saves multiqc data to the database. You can save one directory at a
     *   If using this option, directory and sample_metadata parameters are not required.
 
 <br>
+
 ##### sample_metadata (required):
 
 A CSV (comma-separated) in the format with the following format…
@@ -101,6 +104,7 @@ A CSV (comma-separated) in the format with the following format…
 
 
 <br>
+
 ##### batch_metdata (optional):
 
 A CSV (comma-separated) in the format with the following format…
@@ -141,6 +145,7 @@ A CSV (comma-separated) in the format with the following format…
 `--cohort_metadata` can also be used on its own to save cohort metadata to a cohort that already exists in the database.
 
 <br>
+
 ##### Save Examples:
 
 
@@ -192,7 +197,9 @@ A CSV (comma-separated) in the format with the following format…
 </table>
 
 <br>
+
 #### Query
+
 ```
 falcon_multiqc query
 ```
@@ -245,9 +252,10 @@ Add filtering with the following options. Multiple filters will behave like OR. 
     
 **Extra Notes on Using `--tool-metric`** **Filter:**
 *   Special characters must be escaped (wrapped in single quotes) in bash, like '&lt;'.
-*   You must always specify 4 values with `--tool-metric &lt;tool name> &lt;metric> &lt;operator> &lt;value>`.
-*   The `&lt;operator> ` has to be one of **<code>'>', '>=','&lt;','&lt;=','==','!='</code></strong>
-*   If you only want to filter by <code>&lt;tool name></code> and <code>&lt;metric></code> (not operator / value) and therefore get results with that metric regardless of its value… give dummy invalid values to the 3rd and 4th argument.  \
+*   You must always specify 4 values with `--tool-metric <toolname><metric> <operator> <value>`.
+*   The `<operator> ` has to be one of **<code>'>', '>=','&lt;','&lt;=','==','!='</code></strong>
+*   If you only want to filter by <code>&lt;tool name></code> and <code>&lt;metric></code> (not operator / value) and therefore get results with that metric regardless of its value… give dummy invalid values to the 3rd and 4th argument.
+
 
     *   E.g.<code> --tool-metric &lt;tool name> &lt;metric> 0 0</code> invalid &lt;operator> values indicate to the program to ignore them.
 
@@ -390,6 +398,7 @@ This command allows you to visualise the output of the `query` command. The outp
   - Supports multiple metrics (will be plotted as separate graphs).
 
 <br>
+
 #### SQL
 This command allows you to query the falcon multiqc database using raw SQL.
 
@@ -417,6 +426,7 @@ Options:
 NOTE: If `--multiqc` or `--csv` flags are not used, result will print to stdout.
     See example_1
 <br>
+
 #### Check Database
 
 ```
